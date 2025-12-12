@@ -1,15 +1,14 @@
 /* =========================================================
-   handoff.js  店員用 受け渡し（v1骨格）
-   - 3/6件切替
-   - 自動更新（10/30/60秒・差分判定・非表示タブ停止）
+   handoff.js  店員用 受け渡し（v1骨格 + 要望反映）
+   - 3/6切替
+   - 自動更新（10/30/60秒、非表示タブ停止、差分判定）
    - フィルタ（単一）
-   - 並び順（受付/経過/手動rank）
-   - カードタップでPOS風編集（数量変更＋品目追加）
+   - 編集：カードタップ → POS風モーダル（数量変更＋品目追加）
    - 完了/キャンセル
+   - 手動並び替え：rankモード時に上下ボタン（GASへ保存）
 ========================================================= */
 
 const qs = (s, el=document) => el.querySelector(s);
-const qsa = (s, el=document) => [...el.querySelectorAll(s)];
 const yen = (n) => "¥" + (Number(n||0)).toLocaleString("ja-JP");
 const escapeHtml = (s)=>String(s ?? "").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 
@@ -45,14 +44,14 @@ async function apiPost(payload) {
 let autoEnabled = false;
 let timer = null;
 let lastMaxUpdatedAt = "";
-let products = [];         // staff用商品（追加用）
+let products = [];
 let productsLoaded = false;
 
-let currentOrdersMain = [];
-let currentOrdersOther = [];
+let ordersMain = [];
+let ordersOther = [];
 
-let editingOrder = null;   // {order_id,...}
-let draftItems = [];       // modal用 items
+let editingOrder = null;
+let draftItems = [];
 
 /* ===== controls ===== */
 const elView = qs("#viewMode");
@@ -81,7 +80,7 @@ function startAuto() {
 
   const sec = Number(elAutoInt.value || 30);
   timer = setInterval(() => {
-    if (document.visibilityState !== "visible") return; // 背景タブ停止
+    if (document.visibilityState !== "visible") return;
     refresh({ silent:true });
   }, sec * 1000);
 }
@@ -96,9 +95,30 @@ elFilter.addEventListener("change", () => refresh({ silent:false }));
 elAutoInt.addEventListener("change", () => { if (autoEnabled) startAuto(); });
 
 document.addEventListener("visibilitychange", () => {
-  // 戻ってきた時に最新化
   if (document.visibilityState === "visible" && autoEnabled) refresh({ silent:true });
 });
+
+/* ===== products ===== */
+async function loadProductsOnce() {
+  if (productsLoaded) return;
+  const json = await apiGet({ mode:"getProducts", scope:"staff" });
+  if (!json.ok) throw new Error(json.error || "getProducts failed");
+  products = Array.isArray(json.products) ? json.products : [];
+  productsLoaded = true;
+}
+
+/* ===== filter options ===== */
+function rebuildFilterOptions(options) {
+  const keep = elFilter.value || "";
+  elFilter.innerHTML = `<option value="">フィルタ：全て</option>`;
+  (options || []).forEach(opt => {
+    const op = document.createElement("option");
+    op.value = String(opt.value ?? "");
+    op.textContent = String(opt.label ?? opt.value ?? "");
+    elFilter.appendChild(op);
+  });
+  elFilter.value = keep;
+}
 
 /* ===== render ===== */
 function renderAll() {
@@ -106,27 +126,27 @@ function renderAll() {
   list.innerHTML = "";
 
   const compact = isCompact();
-  currentOrdersMain.forEach(o => list.appendChild(renderCard(o, compact)));
+  const isRankMode = (String(elSort.value) === "rank");
 
-  if (!currentOrdersMain.length) {
+  ordersMain.forEach((o, idx) => list.appendChild(renderCard(o, compact, isRankMode, idx)));
+
+  if (!ordersMain.length) {
     list.innerHTML = `<div class="msg">受付中の注文はありません。</div>`;
   }
 
-  // count pill: pending total
-  const totalCount = currentOrdersMain.length + currentOrdersOther.length;
+  const totalCount = ordersMain.length + ordersOther.length;
   qs("#countPill").textContent = `${totalCount}件`;
 
-  // others
-  qs("#othersSummary").textContent = `その他の注文（${currentOrdersOther.length}件）`;
+  qs("#othersSummary").textContent = `その他の注文（${ordersOther.length}件）`;
   const others = qs("#othersList");
   others.innerHTML = "";
 
-  if (!currentOrdersOther.length) {
+  if (!ordersOther.length) {
     others.innerHTML = `<div class="muted" style="padding:10px 0;">その他はありません。</div>`;
     return;
   }
 
-  currentOrdersOther.forEach(o => {
+  ordersOther.forEach(o => {
     const row = document.createElement("div");
     row.className = "otherRow";
     row.innerHTML = `
@@ -141,23 +161,25 @@ function renderAll() {
   });
 }
 
-function renderCard(o, compact) {
+function renderCard(o, compact, isRankMode, index) {
   const el = document.createElement("div");
   el.className = "card" + (compact ? " compact" : "");
 
   const items = Array.isArray(o.items) ? o.items : [];
   const lines = items.length
-    ? items.map(it => {
-        const name = escapeHtml(it.product_name_at_sale);
-        const qty = Number(it.qty||0);
-        const lt  = yen(Number(it.line_total||0));
-        return `<li>${name} × ${qty}（${lt}）</li>`;
-      }).join("")
+    ? items.map(it => `<li>${escapeHtml(it.product_name_at_sale)} × ${Number(it.qty||0)}（${yen(Number(it.line_total||0))}）</li>`).join("")
     : `<li class="muted">内訳がありません（データ不整合）</li>`;
 
-  const lockNote = (String(o.lock_state||"none") === "staff_edit")
+  const lockNote = (String(o.lock_state||"") === "staff_edit")
     ? `<div class="muted"><span class="dangerText">編集中</span>（別端末の可能性）</div>`
     : "";
+
+  const rankBtns = isRankMode ? `
+    <div class="rankBtns">
+      <button class="rankBtn" data-act="up" ${index===0 ? "disabled":""}>↑</button>
+      <button class="rankBtn" data-act="down" ${index===ordersMain.length-1 ? "disabled":""}>↓</button>
+    </div>
+  ` : "";
 
   el.innerHTML = `
     <div class="row">
@@ -166,7 +188,10 @@ function renderCard(o, compact) {
         <div class="muted">経過 ${Number(o.elapsed_min||0)} 分 / ${escapeHtml(o.created_at||"")}</div>
         ${lockNote}
       </div>
-      <div class="price">${yen(o.total)}</div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        ${rankBtns}
+        <div class="price">${yen(o.total)}</div>
+      </div>
     </div>
 
     <div class="divider"></div>
@@ -180,10 +205,8 @@ function renderCard(o, compact) {
     </div>
   `;
 
-  // カードタップで編集（ボタンは除外）
   el.addEventListener("click", (ev) => {
-    const t = ev.target;
-    if (t && t.closest && t.closest("button")) return;
+    if (ev.target.closest("button")) return;
     openEditor(o);
   });
 
@@ -196,30 +219,14 @@ function renderCard(o, compact) {
     await cancelOrder(o.order_id);
   });
 
+  if (isRankMode) {
+    const up = el.querySelector('[data-act="up"]');
+    const down = el.querySelector('[data-act="down"]');
+    if (up) up.addEventListener("click", async (ev)=>{ ev.stopPropagation(); await moveRank(index, -1); });
+    if (down) down.addEventListener("click", async (ev)=>{ ev.stopPropagation(); await moveRank(index, +1); });
+  }
+
   return el;
-}
-
-/* ===== data ===== */
-async function loadProductsOnce() {
-  if (productsLoaded) return;
-  const json = await apiGet({ mode:"getProducts", scope:"staff" });
-  if (!json.ok) throw new Error(json.error || "getProducts failed");
-  products = Array.isArray(json.products) ? json.products : [];
-  productsLoaded = true;
-}
-
-function rebuildFilterOptions(options) {
-  // options: [{value,label}] 形式を想定
-  const keep = elFilter.value || "";
-  elFilter.innerHTML = `<option value="">フィルタ：全て</option>`;
-  (options || []).forEach(opt => {
-    const op = document.createElement("option");
-    op.value = String(opt.value ?? "");
-    op.textContent = String(opt.label ?? opt.value ?? "");
-    elFilter.appendChild(op);
-  });
-  // 可能なら維持
-  elFilter.value = keep;
 }
 
 /* ===== refresh ===== */
@@ -233,41 +240,29 @@ async function refresh({silent=false}={}) {
   qs("#orderList").innerHTML = `<div class="msg">読み込み中…</div>`;
 
   try {
-    const limit = String(getLimit());
-    const sort = String(elSort.value || "created");
-    const filter = String(elFilter.value || "");
-
-    // サーバー側が対応していれば差分判定が効く（未対応でもOK）
     const json = await apiGet({
       mode: "getPendingOrders",
-      limit,
-      sort,
-      filter,
+      limit: String(getLimit()),
+      sort: String(elSort.value || "created"),
+      filter: String(elFilter.value || ""),
       since: lastMaxUpdatedAt || ""
     });
 
     if (!json.ok) throw new Error(json.error || "取得失敗");
 
-    // 差分なし判定（サーバーがchanged返すならそれ優先）
     if (json.changed === false) {
-      // 表示はそのまま（時間表示を変えたいならrefreshの頻度で更新してもOK）
+      // 差分なし：表示を維持（必要なら経過分だけ更新など拡張OK）
       qs("#orderList").innerHTML = "";
-      currentOrdersMain.forEach(o => qs("#orderList").appendChild(renderCard(o, isCompact())));
+      ordersMain.forEach((o, idx) => qs("#orderList").appendChild(renderCard(o, isCompact(), String(elSort.value)==="rank", idx)));
       refreshLock = false;
       return;
     }
 
-    const main = Array.isArray(json.orders_main) ? json.orders_main : (Array.isArray(json.orders) ? json.orders : []);
-    const other = Array.isArray(json.orders_other) ? json.orders_other : [];
+    ordersMain = Array.isArray(json.orders_main) ? json.orders_main : (Array.isArray(json.orders) ? json.orders : []);
+    ordersOther = Array.isArray(json.orders_other) ? json.orders_other : [];
 
-    currentOrdersMain = main;
-    currentOrdersOther = other;
+    if (typeof json.max_updated_at === "string") lastMaxUpdatedAt = json.max_updated_at;
 
-    if (typeof json.max_updated_at === "string") {
-      lastMaxUpdatedAt = json.max_updated_at;
-    }
-
-    // フィルタ候補（あれば）
     if (Array.isArray(json.filter_options)) rebuildFilterOptions(json.filter_options);
 
     renderAll();
@@ -291,7 +286,6 @@ qs("#mClose").addEventListener("click", async () => {
   closeEditor();
 });
 qs("#overlay").addEventListener("click", async (ev) => {
-  // 背景クリックで閉じる（モーダル本体は閉じない）
   if (ev.target.id === "overlay") {
     await unlockEditingOrder();
     closeEditor();
@@ -306,25 +300,20 @@ function closeEditor() {
 }
 
 async function lockEditingOrder(order_id) {
-  // 既存のmodeを使う（GAS側で対応必須）
   try {
     const j = await apiPost({ mode:"staffSetLock", order_id, lock_state:"staff_edit" });
     if (!j.ok) throw new Error(j.error || "lock failed");
-  } catch (e) {
-    // ロック失敗でも編集はできるようにする（ただし注意表示）
-    setModalMsg("err", "ロックに失敗しました（他端末と競合の可能性）。\n保存時に上書きになります。");
+  } catch {
+    setModalMsg("err", "ロックに失敗（他端末と競合の可能性）。保存時に上書きになる場合があります。");
   }
 }
 async function unlockEditingOrder() {
   if (!editingOrder) return;
-  try {
-    await apiPost({ mode:"staffSetLock", order_id: editingOrder.order_id, lock_state:"none" });
-  } catch {}
+  try { await apiPost({ mode:"staffSetLock", order_id: editingOrder.order_id, lock_state:"" }); } catch {}
 }
 
 function normalizeDraftFromOrder(o) {
   const items = Array.isArray(o.items) ? o.items : [];
-  // modal内では、必ず product_id を持つ形に寄せる
   return items.map(it => ({
     product_id: String(it.product_id || ""),
     product_name_at_sale: String(it.product_name_at_sale || ""),
@@ -344,7 +333,6 @@ function renderModal() {
   qs("#mSub").textContent = `経過 ${Number(editingOrder.elapsed_min||0)} 分 / 注文ID: ${editingOrder.order_id}`;
   qs("#mTotal").textContent = yen(calcDraftTotal());
 
-  // items
   const box = qs("#mItems");
   box.innerHTML = "";
 
@@ -400,27 +388,27 @@ function renderModal() {
   out.innerHTML = "";
 
   const filtered = products
-    .filter(p => p && p.is_active !== false)
+    .filter(p => p && p.product_id)
     .filter(p => {
       const name = String(p.name||"").toLowerCase();
       return key ? name.includes(key) : true;
     })
-    .slice(0, 12);
+    .slice(0, 15);
 
   if (!filtered.length) {
     out.innerHTML = `<div class="muted" style="padding:10px 0;">該当なし</div>`;
   } else {
     filtered.forEach(p => {
+      const sold = !!p.is_sold_out;
       const b = document.createElement("button");
       b.type = "button";
       b.className = "prodBtn";
+      b.disabled = sold;
       b.innerHTML = `
-        <div>${escapeHtml(p.name)}</div>
+        <div>${escapeHtml(p.name)} ${sold ? '<span class="dangerText">（売切）</span>' : ""}</div>
         <div class="muted">${yen(p.price)}</div>
       `;
-      b.addEventListener("click", () => {
-        addProductToDraft(p);
-      });
+      b.addEventListener("click", () => addProductToDraft(p));
       out.appendChild(b);
     });
   }
@@ -429,18 +417,14 @@ function renderModal() {
 function addProductToDraft(p) {
   const pid = String(p.product_id || "");
   if (!pid) return;
-
   const existing = draftItems.find(x => x.product_id === pid);
-  if (existing) {
-    existing.qty += 1;
-  } else {
-    draftItems.push({
-      product_id: pid,
-      product_name_at_sale: String(p.name || ""),
-      unit_price: Number(p.price || 0),
-      qty: 1,
-    });
-  }
+  if (existing) existing.qty += 1;
+  else draftItems.push({
+    product_id: pid,
+    product_name_at_sale: String(p.name || ""),
+    unit_price: Number(p.price || 0),
+    qty: 1,
+  });
   renderModal();
 }
 
@@ -460,13 +444,9 @@ async function openEditor(order) {
     setModalMsg("err", `編集画面を開けませんでした。\n詳細: ${String(err.message||err)}`);
   }
 }
+qs("#mSearch").addEventListener("input", () => { if (editingOrder) renderModal(); });
 
-qs("#mSearch").addEventListener("input", () => {
-  if (!editingOrder) return;
-  renderModal();
-});
-
-/* ===== save / complete / cancel from modal ===== */
+/* ===== save / complete / cancel ===== */
 async function saveDraft() {
   if (!editingOrder) return;
 
@@ -476,15 +456,12 @@ async function saveDraft() {
   btn.textContent = "保存中…";
 
   try {
-    // 注文の明細を「丸ごと」送る（自由度が高い）
     const payload = {
       mode: "updateOrderItems",
       order_id: editingOrder.order_id,
       actor: "staff",
       items: draftItems.map(it => ({
         product_id: it.product_id,
-        product_name_at_sale: it.product_name_at_sale,
-        unit_price: it.unit_price,
         qty: it.qty
       }))
     };
@@ -492,7 +469,6 @@ async function saveDraft() {
     const json = await apiPost(payload);
     if (!json.ok) throw new Error(json.error || "保存失敗");
 
-    // 保存後、一覧を更新
     await unlockEditingOrder();
     closeEditor();
     await refresh({ silent:true });
@@ -507,8 +483,6 @@ async function saveDraft() {
 
 async function completeOrder(order_id) {
   if (!confirm("受け渡し完了にします。よろしいですか？")) return;
-
-  setMsg("", "");
   try {
     const json = await apiPost({ mode:"staffMarkHanded", order_id, actor:"staff" });
     if (!json.ok) throw new Error(json.error || "失敗");
@@ -524,8 +498,6 @@ async function completeOrder(order_id) {
 
 async function cancelOrder(order_id) {
   if (!confirm("この注文をキャンセルします。よろしいですか？")) return;
-
-  setMsg("", "");
   try {
     const json = await apiPost({ mode:"cancelOrder", order_id, actor:"staff" });
     if (!json.ok) throw new Error(json.error || "失敗");
@@ -540,14 +512,26 @@ async function cancelOrder(order_id) {
 }
 
 qs("#mSave").addEventListener("click", saveDraft);
-qs("#mHanded").addEventListener("click", async () => {
-  if (!editingOrder) return;
-  await completeOrder(editingOrder.order_id);
-});
-qs("#mCancel").addEventListener("click", async () => {
-  if (!editingOrder) return;
-  await cancelOrder(editingOrder.order_id);
-});
+qs("#mHanded").addEventListener("click", async () => { if (editingOrder) await completeOrder(editingOrder.order_id); });
+qs("#mCancel").addEventListener("click", async () => { if (editingOrder) await cancelOrder(editingOrder.order_id); });
+
+/* ===== rank reorder ===== */
+async function moveRank(index, delta) {
+  const target = index + delta;
+  if (target < 0 || target >= ordersMain.length) return;
+
+  // 現在の並び（mainのみ）をswapして保存
+  const ids = ordersMain.map(o => o.order_id);
+  const tmp = ids[index]; ids[index] = ids[target]; ids[target] = tmp;
+
+  try {
+    const json = await apiPost({ mode:"updateHandoffRanks", order_ids: ids });
+    if (!json.ok) throw new Error(json.error || "並び替え失敗");
+    await refresh({ silent:true });
+  } catch (err) {
+    setMsg("err", `並び替えできませんでした。\n詳細: ${String(err.message||err)}`);
+  }
+}
 
 /* ===== init ===== */
 (async function init(){
