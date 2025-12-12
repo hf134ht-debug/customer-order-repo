@@ -5,170 +5,162 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>店員用 受け渡し</title>
   <style>
-    :root { --bg:#f7f7fb; --card:#fff; --line:#e8e8ef; --text:#111; --muted:#666; --danger:#c0392b; --ok:#1e824c; }
-    body { margin:0; font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif; background:var(--bg); color:var(--text); }
-    header { position:sticky; top:0; z-index:5; background:rgba(247,247,251,.92); backdrop-filter: blur(10px); border-bottom:1px solid var(--line); }
-    .wrap { max-width: 900px; margin:0 auto; padding: 10px 12px 30px; }
-    .topbar { display:flex; align-items:center; justify-content:space-between; gap:10px; padding: 10px 0; }
-    .title { font-weight: 900; font-size: 18px; }
-    .btn { border:1px solid var(--line); background:var(--card); padding: 10px 12px; border-radius: 12px; font-weight:900; cursor:pointer; }
-    .btnPrimary { background:#111; color:#fff; border-color:#111; }
-    .btnDanger { background: var(--danger); color:#fff; border-color: var(--danger); }
-    .msg { margin: 10px 0; padding: 10px 12px; border-radius: 12px; border:1px solid var(--line); background: var(--card); }
-    .msg.err { border-color: #f0c0c0; background: #fff5f5; color: var(--danger); }
-    .muted { color: var(--muted); font-size: 12px; }
-    .grid { display:flex; flex-direction: column; gap: 10px; }
-    .card { background:var(--card); border:1px solid var(--line); border-radius: 16px; padding: 12px; }
-    .row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-    .name { font-weight: 900; font-size: 16px; }
-    .price { font-weight: 900; }
-    .divider { height:1px; background: var(--line); margin: 12px 0; }
-    .list { margin: 8px 0; padding-left: 18px; }
-    .pill { padding: 4px 8px; border-radius: 999px; border:1px solid var(--line); background:#fff; font-weight:900; }
-    .actions { display:flex; gap:10px; justify-content:flex-end; margin-top: 10px; flex-wrap: wrap; }
+    :root{ --bg:#f7f7fb; --card:#fff; --line:#e8e8ef; --text:#111; --muted:#666; --danger:#c0392b; --ok:#1e824c; --shadow:0 10px 30px rgba(0,0,0,.06); }
+    body{ margin:0; font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif; background:var(--bg); color:var(--text); }
+    header{ position:sticky; top:0; z-index:10; background:rgba(247,247,251,.92); backdrop-filter: blur(10px); border-bottom:1px solid var(--line); }
+    .wrap{ max-width: 980px; margin:0 auto; padding: 10px 12px 30px; }
+    .topbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding: 10px 0; flex-wrap:wrap; }
+    .title{ font-weight: 900; font-size: 18px; }
+    .pill{ padding: 4px 8px; border-radius: 999px; border:1px solid var(--line); background:#fff; font-weight:900; }
+    .btn{ border:1px solid var(--line); background:var(--card); padding: 10px 12px; border-radius: 12px; font-weight:900; cursor:pointer; }
+    .btnPrimary{ background:#111; color:#fff; border-color:#111; }
+    .btnDanger{ background:var(--danger); color:#fff; border-color:var(--danger); }
+    .btnOk{ background:var(--ok); color:#fff; border-color:var(--ok); }
+    .btn:disabled{ opacity:.6; cursor:not-allowed; }
+    .muted{ color:var(--muted); font-size: 12px; }
+    .msg{ margin: 10px 0; padding: 10px 12px; border-radius: 12px; border:1px solid var(--line); background: var(--card); }
+    .msg.err{ border-color:#f0c0c0; background:#fff5f5; color:var(--danger); }
+    .grid{ display:flex; flex-direction:column; gap:10px; }
+    .card{ background:var(--card); border:1px solid var(--line); border-radius: 16px; padding: 12px; box-shadow: var(--shadow); }
+    .card.compact .name{ font-size: 14px; }
+    .row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .name{ font-weight: 900; font-size: 16px; }
+    .price{ font-weight: 900; }
+    .divider{ height:1px; background:var(--line); margin: 12px 0; }
+    .list{ margin: 8px 0; padding-left: 18px; }
+    .actions{ display:flex; gap:10px; justify-content:flex-end; margin-top: 10px; flex-wrap: wrap; }
+    .ctrls{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    select, input[type="search"]{ border:1px solid var(--line); background:#fff; padding:10px 10px; border-radius:12px; font-weight:800; }
+    .sectionTitle{ font-weight:900; margin: 14px 0 8px; }
+    details{ border:1px solid var(--line); background:#fff; border-radius:16px; padding:10px 12px; }
+    summary{ cursor:pointer; font-weight:900; }
+    .otherRow{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-top:1px dashed var(--line); cursor:pointer; }
+    .otherRow:first-of-type{ border-top:none; }
+    .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; padding:2px 6px; border:1px solid var(--line); border-radius:8px; background:#fff; }
+    /* modal */
+    .overlay{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; z-index:50; }
+    .overlay.show{ display:block; }
+    .modal{ position:fixed; inset:auto 0 0 0; background:#fff; border-radius: 18px 18px 0 0; border-top:1px solid var(--line); box-shadow: var(--shadow); max-height: 86vh; overflow:auto; padding: 12px; }
+    .modalHead{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+    .modalTitle{ font-weight:900; font-size:18px; }
+    .mini{ font-size:12px; color:var(--muted); }
+    .itemRow{ display:grid; grid-template-columns: 1fr auto auto; gap:8px; align-items:center; padding:10px 0; border-top:1px solid var(--line); }
+    .itemRow:first-child{ border-top:none; }
+    .qtyBox{ display:flex; align-items:center; gap:6px; }
+    .qtyBtn{ width:38px; height:38px; border-radius:12px; border:1px solid var(--line); background:#fff; font-weight:900; cursor:pointer; }
+    .qtyInp{ width:64px; text-align:center; border:1px solid var(--line); border-radius:12px; padding:10px 6px; font-weight:900; }
+    .right{ text-align:right; }
+    .dangerText{ color:var(--danger); font-weight:900; }
+    .searchBox{ display:flex; gap:8px; align-items:center; }
+    .prodList{ display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+    .prodBtn{ display:flex; justify-content:space-between; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:14px; background:#fff; cursor:pointer; font-weight:900; }
+    .stickyFoot{ position:sticky; bottom:0; background:#fff; padding:10px 0 0; border-top:1px solid var(--line); }
   </style>
 </head>
 <body>
 <header>
   <div class="wrap">
     <div class="topbar">
-      <div class="title">店員用 受け渡し</div>
-      <div style="display:flex; gap:8px; align-items:center;">
+      <div>
+        <div class="title">店員用 受け渡し</div>
+        <div class="muted">pending を表示。カードタップで内訳編集（POS風）→ 保存 / 完了 / キャンセル。</div>
+      </div>
+
+      <div class="ctrls">
         <span class="pill" id="countPill">0件</span>
+
+        <select id="viewMode">
+          <option value="3">通常（3件）</option>
+          <option value="6">コンパクト（6件）</option>
+        </select>
+
+        <select id="sortMode">
+          <option value="created">受付順</option>
+          <option value="elapsed_desc">経過長い順</option>
+          <option value="rank">手動順（rank）</option>
+        </select>
+
+        <select id="filterMode">
+          <option value="">フィルタ：全て</option>
+        </select>
+
         <button class="btn" id="btnRefresh">更新</button>
-        <button class="btn btnPrimary" id="btnAuto">自動更新ON</button>
+
+        <select id="autoInterval">
+          <option value="10">自動 10秒</option>
+          <option value="30" selected>自動 30秒</option>
+          <option value="60">自動 60秒</option>
+        </select>
+
+        <button class="btn btnPrimary" id="btnAuto">自動更新：OFF</button>
       </div>
     </div>
-    <div class="muted">pending の注文を表示します。「受け渡し完了」で消え、会計ログ（受け渡し完了になった商品）に記録されます。</div>
+
     <div id="msgArea"></div>
   </div>
 </header>
 
 <main class="wrap">
   <div class="grid" id="orderList"></div>
+
+  <div class="sectionTitle">その他の注文</div>
+  <details id="othersBox">
+    <summary id="othersSummary">その他の注文（0件）</summary>
+    <div id="othersList"></div>
+  </details>
 </main>
 
-<script>
-  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzeeGTJKZXHsVEw8DMz_QahMsnbqAUzDM3D_9mnv1LpVRxIitpL0F3xlCTwKUjV0OURzQ/exec";
-
-  const qs = (s, el=document) => el.querySelector(s);
-  const yen = (n) => "¥" + (Number(n||0)).toLocaleString("ja-JP");
-  const escapeHtml = (s)=>String(s).replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
-
-  let auto = false;
-  let timer = null;
-
-  function setMsg(type, text) {
-    const area = qs("#msgArea");
-    if (!text) { area.innerHTML = ""; return; }
-    const cls = type==="err" ? "msg err" : "msg";
-    area.innerHTML = `<div class="${cls}">${escapeHtml(text).replace(/\n/g,"<br>")}</div>`;
-  }
-
-  async function apiGet(params) {
-    const url = new URL(GAS_WEB_APP_URL);
-    Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
-    const res = await fetch(url.toString(), { method:"GET" });
-    return await res.json();
-  }
-  async function apiPost(payload) {
-    const res = await fetch(GAS_WEB_APP_URL, {
-      method:"POST",
-      headers:{ "Content-Type":"text/plain;charset=utf-8" },
-      body: JSON.stringify(payload),
-    });
-    return await res.json();
-  }
-
-  async function refresh() {
-    setMsg("", "");
-    qs("#orderList").innerHTML = `<div class="msg">読み込み中…</div>`;
-
-    try {
-      const json = await apiGet({ mode:"getPendingOrders" });
-      if (!json.ok) throw new Error(json.error || "取得失敗");
-
-      const orders = json.orders || [];
-      qs("#countPill").textContent = `${orders.length}件`;
-
-      if (!orders.length) {
-        qs("#orderList").innerHTML = `<div class="msg">受付中の注文はありません。</div>`;
-        return;
-      }
-
-      qs("#orderList").innerHTML = "";
-      orders.forEach(o => renderOrderCard(o));
-
-    } catch (err) {
-      qs("#orderList").innerHTML = "";
-      setMsg("err", `取得できませんでした。\n詳細: ${String(err.message||err)}`);
-    }
-  }
-
-  function renderOrderCard(o) {
-    const el = document.createElement("div");
-    el.className = "card";
-
-    const items = Array.isArray(o.items) ? o.items : [];
-    const lines = items.length
-      ? items.map(it => `<li>${escapeHtml(it.product_name_at_sale)} × ${Number(it.qty||0)}（${yen(Number(it.line_total||0))}）</li>`).join("")
-      : `<li class="muted">内訳がありません（データ不整合）</li>`;
-
-    el.innerHTML = `
-      <div class="row">
-        <div>
-          <div class="name">No.${Number(o.display_no||0)}</div>
-          <div class="muted">経過 ${Number(o.elapsed_min||0)} 分 / 注文ID: ${escapeHtml(o.order_id)}</div>
-        </div>
-        <div class="price">${yen(o.total)}</div>
+<!-- 編集モーダル -->
+<div class="overlay" id="overlay" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modalHead">
+      <div>
+        <div class="modalTitle" id="mTitle">編集</div>
+        <div class="mini" id="mSub"></div>
       </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="btn" id="mClose">閉じる</button>
+      </div>
+    </div>
 
-      <div class="divider"></div>
+    <div id="mMsg"></div>
 
-      <div><b>内訳</b></div>
-      <ul class="list">${lines}</ul>
+    <div class="divider"></div>
 
+    <div><b>内訳（数量変更・0で削除）</b></div>
+    <div id="mItems"></div>
+
+    <div class="divider"></div>
+
+    <div><b>品目追加</b></div>
+    <div class="searchBox">
+      <input type="search" id="mSearch" placeholder="商品名で検索（例：コーヒー）" style="flex:1;">
+      <span class="kbd">Enter</span>
+    </div>
+    <div class="prodList" id="mProds"></div>
+
+    <div class="divider"></div>
+
+    <div class="row">
+      <div><b>合計</b></div>
+      <div class="price" id="mTotal">¥0</div>
+    </div>
+
+    <div class="stickyFoot">
       <div class="actions">
-        <button class="btn btnDanger" data-act="handed">受け渡し完了</button>
+        <button class="btn btnPrimary" id="mSave">保存</button>
+        <button class="btn btnOk" id="mHanded">受け渡し完了</button>
+        <button class="btn btnDanger" id="mCancel">キャンセル</button>
       </div>
-    `;
+      <div class="muted" style="margin-top:6px;">※キャンセル/完了は確認ダイアログあり</div>
+    </div>
+  </div>
+</div>
 
-    el.querySelector('[data-act="handed"]').addEventListener("click", async () => {
-      const btn = el.querySelector('[data-act="handed"]');
-      btn.disabled = true;
-      btn.textContent = "処理中…";
-      try {
-        const json = await apiPost({ mode:"staffMarkHanded", order_id: o.order_id, actor:"staff" });
-        if (!json.ok) throw new Error(json.error || "失敗");
-        el.remove();
-        const current = qs("#orderList").children.length;
-        qs("#countPill").textContent = `${current}件`;
-      } catch (err) {
-        btn.disabled = false;
-        btn.textContent = "受け渡し完了";
-        setMsg("err", `処理できませんでした。\n詳細: ${String(err.message||err)}`);
-      }
-    });
-
-    qs("#orderList").appendChild(el);
-  }
-
-  qs("#btnRefresh").addEventListener("click", refresh);
-
-  qs("#btnAuto").addEventListener("click", () => {
-    auto = !auto;
-    qs("#btnAuto").textContent = auto ? "自動更新ON" : "自動更新OFF";
-    if (timer) clearInterval(timer);
-    if (auto) timer = setInterval(refresh, 5000);
-  });
-
-  (async function init(){
-    if (!GAS_WEB_APP_URL.includes("script.google.com")) {
-      setMsg("err", "GAS_WEB_APP_URL が未設定です。");
-      return;
-    }
-    await refresh();
-  })();
+<script>
+  // ★あなたのGAS Web App URL（既にOK）
+  const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzeeGTJKZXHsVEw8DMz_QahMsnbqAUzDM3D_9mnv1LpVRxIitpL0F3xlCTwKUjV0OURzQ/exec";
 </script>
+<script src="./handoff.js"></script>
 </body>
 </html>
