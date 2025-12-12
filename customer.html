@@ -226,14 +226,15 @@
     }
 
     async function apiPost(payload) {
-      const res = await fetch(GAS_WEB_APP_URL, {
-        method: "POST",
-        headers: { "Content-Type":"application/json" },
-        body: JSON.stringify(payload),
-      });
-      const json = await res.json();
-      return json;
-    }
+  const res = await fetch(GAS_WEB_APP_URL, {
+    method: "POST",
+    // ★ headers を付けない（または text/plain にする）
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload),
+  });
+  const json = await res.json();
+  return json;
+}
 
     // ---------- Products ----------
     async function loadProducts() {
@@ -775,3 +776,4 @@
   </script>
 </body>
 </html>
+
