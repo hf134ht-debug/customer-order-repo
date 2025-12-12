@@ -114,6 +114,10 @@
   <div class="bottomBar">
     <div class="bottomInner">
       <div class="bottomTotal" id="totalBottom">合計 ¥0</div>
+
+      <!-- ★ 変更キャンセル（編集時のみ表示） -->
+      <button class="btn" id="btnEditCancel" style="display:none;">変更キャンセル</button>
+
       <button class="btn" id="btnClear">クリア</button>
       <button class="btn btnPrimary" id="btnCheckout">注文確定</button>
     </div>
@@ -177,8 +181,12 @@
 
     function updateBottomButtons() {
       const isEditing = !!editOrderId;
+
       qs("#btnCheckout").textContent = isEditing ? "変更を保存" : "注文確定";
-      qs("#btnClear").disabled = isEditing; // 編集中はクリア誤爆防止（必要ならfalseでもOK）
+
+      // 編集中：クリア無効、代わりに「変更キャンセル」を表示
+      qs("#btnClear").disabled = isEditing;
+      qs("#btnEditCancel").style.display = isEditing ? "" : "none";
     }
 
     function updateTotals() {
@@ -217,6 +225,9 @@
       // 注文確認中は、誤って「注文確定/変更保存」しないように
       qs("#btnCheckout").disabled = !isPos;
       qs("#btnClear").disabled = !isPos || !!editOrderId; // POSでも編集中は無効
+
+      // ★ ②側では編集キャンセルボタンは出さない
+      if (!isPos) qs("#btnEditCancel").style.display = "none";
     }
 
     // ---------- modal ----------
@@ -614,6 +625,7 @@
       return status || "";
     }
 
+    // ★ itemsキー揺れ吸収版
     async function loadMyOrder(orderId) {
       if (!orderId) return;
       loading.my = true;
@@ -623,7 +635,17 @@
       try {
         const json = await apiGet({ mode:"getMyOrder", order_id: orderId });
         if (!json.ok) throw new Error(json.error || "注文の取得に失敗しました。");
-        renderMyOrder(json.order, json.items);
+
+        const order = json.order || {};
+        const items =
+          json.items ||
+          json.order_items ||
+          order.items ||
+          order.order_items ||
+          order.lines ||
+          [];
+
+        renderMyOrder(order, items);
       } catch (err) {
         qs("#myOrderArea").innerHTML = `
           <div class="msg err">
@@ -640,10 +662,17 @@
       const editable = (order.status === "pending") && (order.lock_state !== "staff_edit");
       const locked = (order.lock_state === "staff_edit");
 
-      const lines = (items || []).map(it => {
-        const lt = Number(it.qty||0) * Number(it.unit_price||0);
-        return `<li>${escapeHtml(it.product_name_at_sale)} × ${Number(it.qty||0)}（${yen(lt)}）</li>`;
-      }).join("");
+      // ★ 内訳表示：キー揺れ吸収
+      const listItems = Array.isArray(items) ? items : (items ? Object.values(items) : []);
+      const lines = listItems.length
+        ? listItems.map(it => {
+            const qty  = Number(it.qty ?? it.quantity ?? 0);
+            const unit = Number(it.unit_price ?? it.unitPrice ?? it.price ?? 0);
+            const name = String(it.product_name_at_sale ?? it.productNameAtSale ?? it.name ?? it.product_name ?? it.productName ?? "").trim();
+            const lt = qty * unit;
+            return `<li>${escapeHtml(name || "商品")} × ${qty}（${yen(lt)}）</li>`;
+          }).join("")
+        : `<li class="muted">内訳がありません（GASの戻りに items が含まれていない可能性）</li>`;
 
       const hint = locked ? "スタッフが内容を確認中です。しばらくしてからお試しください。" :
                     editable ? "「変更」を押すと、①注文画面で数量を編集できます。" :
@@ -687,9 +716,13 @@
 
         // qtyMapへ反映
         qtyMap = Object.fromEntries(products.map(p => [p.product_id, 0]));
-        (items||[]).forEach(it => {
-          if (Object.prototype.hasOwnProperty.call(qtyMap, it.product_id)) {
-            qtyMap[it.product_id] = Number(it.qty||0);
+
+        // ★ product_idのキー揺れ吸収
+        (listItems||[]).forEach(it => {
+          const pid = String(it.product_id ?? it.productId ?? it.pid ?? "");
+          if (!pid) return;
+          if (Object.prototype.hasOwnProperty.call(qtyMap, pid)) {
+            qtyMap[pid] = Number(it.qty ?? it.quantity ?? 0);
           }
         });
 
@@ -701,7 +734,7 @@
         setMsg("", "");
       });
 
-      // cancel
+      // cancel (order cancel)
       qs("#btnCancel").addEventListener("click", async () => {
         if (!editable) return;
 
@@ -745,6 +778,36 @@
       renderProductList();
       updateTotals();
       setMsg("", "");
+    });
+
+    // ★ 変更キャンセル（編集内容破棄 → ②に戻す）
+    qs("#btnEditCancel").addEventListener("click", async () => {
+      if (!editOrderId) return;
+
+      openModal({
+        title: "変更をキャンセルしますか？",
+        bodyHtml: `<div class="msg">編集内容を破棄して、注文確認画面に戻ります。</div>`,
+        actions: [
+          { label:"続ける", className:"btn", onClick: () => closeModal() },
+          { label:"キャンセルする", className:"btn btnDanger", onClick: async () => {
+              const oid = editOrderId;
+              editOrderId = null;
+              showEditBanner("");
+              updateBottomButtons();
+
+              // 数量を初期化（編集前の状態に戻す意味でゼロにしています）
+              qtyMap = Object.fromEntries(products.map(p => [p.product_id, 0]));
+              renderProductList();
+              updateTotals();
+
+              closeModal();
+              setView("my");
+              qs("#orderIdInput").value = oid;
+              await loadMyOrder(oid);
+            }
+          }
+        ]
+      });
     });
 
     qs("#btnCheckout").addEventListener("click", async () => {
