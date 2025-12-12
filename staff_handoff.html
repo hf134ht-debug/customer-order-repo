@@ -143,11 +143,12 @@
     async function apiPost(payload) {
       const res = await fetch(GAS_WEB_APP_URL, {
         method: "POST",
-        headers: { "Content-Type":"application/json" },
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload),
       });
       return await res.json();
     }
+
 
     // ---- load products (for filter) ----
     async function loadProducts() {
@@ -501,3 +502,4 @@
   </script>
 </body>
 </html>
+
