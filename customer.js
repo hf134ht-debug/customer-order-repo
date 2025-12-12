@@ -345,6 +345,12 @@ async function doCreateOrder(items) {
 
     const order = json.order;
     localStorage.setItem(LS_LAST_ORDER_ID, order.order_id);
+    // ★URLにも注文IDを反映（履歴に残さない）
+    try {
+      const u = new URL(location.href);
+      u.searchParams.set("order_id", order.order_id);
+      history.replaceState(null, "", u.toString());
+    } catch {}
 
     qtyMap = Object.fromEntries(products.map(p => [p.product_id, 0]));
     renderProductList();
@@ -630,8 +636,17 @@ qs("#btnLoadLast").addEventListener("click", async () => {
   }
 
   await loadProducts();
+  // ★URLパラメータから注文IDを受け取る
+const sp = new URLSearchParams(location.search);
+const oidFromUrl = (sp.get("order_id") || "").trim();
+if (oidFromUrl) {
+  qs("#orderIdInput").value = oidFromUrl;
+  setView("my");
+  await loadMyOrder(oidFromUrl);
+}
   updateTotals();
 
   const last = localStorage.getItem(LS_LAST_ORDER_ID) || "";
   qs("#btnLoadLast").style.display = last ? "" : "none";
 })();
+
