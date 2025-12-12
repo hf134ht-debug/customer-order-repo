@@ -1,8 +1,11 @@
 const GAS_WEB_APP_URL = (window.GAS_WEB_APP_URL || "").trim();
 const $ = (id) => document.getElementById(id);
 
+const DOW = ["日","月","火","水","木","金","土"];
+
 function z(n){ return String(n).padStart(2,"0"); }
 function ymd(d){ return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`; }
+function ym(d){ return `${d.getFullYear()}-${z(d.getMonth()+1)}`; }
 
 function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) =>
@@ -10,53 +13,106 @@ function escapeHtml(s) {
   );
 }
 
-function badge(status) {
-  const map = {
-    pending: "🟡 pending",
-    handed: "🟢 handed",
-    auto_handed: "🔵 auto_handed",
-    cancelled: "🔴 cancelled"
+function statusJa(st){
+  const m = {
+    pending: "待ち",
+    handed: "完了",
+    auto_handed: "自動完了",
+    cancelled: "取消"
   };
-  return map[status] || status;
+  return m[st] || st;
 }
 
-function setQuickRange(days) {
-  const to = new Date();
-  const from = new Date();
-  from.setDate(from.getDate() - days);
-  $("fromDate").value = ymd(from);
-  $("toDate").value = ymd(to);
+let viewMonth = new Date();        // 表示中の月
+let hasDaysSet = {};               // "YYYY-MM-DD" => true
+let selectedDay = new Date();      // 選択日
+
+async function fetchMonthDays(monthStr){
+  const url = new URL(GAS_WEB_APP_URL);
+  url.searchParams.set("mode","getOrdersMonthDays");
+  url.searchParams.set("month", monthStr);
+
+  const res = await fetch(url.toString());
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || "getOrdersMonthDays failed");
+
+  hasDaysSet = {};
+  (json.days || []).forEach(d => hasDaysSet[d] = true);
 }
 
-async function loadOrders() {
+function renderCalendar(){
+  $("calTitle").textContent = `${viewMonth.getFullYear()} / ${z(viewMonth.getMonth()+1)}`;
+  $("calDow").innerHTML = DOW.map(x => `<div class="dow">${x}</div>`).join("");
+
+  const first = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 1);
+  const startDow = first.getDay(); // 0..6
+  const start = new Date(first);
+  start.setDate(first.getDate() - startDow);
+
+  const todayStr = ymd(new Date());
+  const selStr = ymd(selectedDay);
+
+  let html = "";
+  for(let i=0;i<42;i++){
+    const d = new Date(start);
+    d.setDate(start.getDate()+i);
+
+    const dStr = ymd(d);
+    const inMonth = d.getMonth() === viewMonth.getMonth();
+    const has = !!hasDaysSet[dStr];
+    const cls = [
+      "day",
+      inMonth ? "" : "off",
+      has ? "has" : "",
+      dStr === selStr ? "sel" : "",
+      dStr === todayStr ? "today" : ""
+    ].filter(Boolean).join(" ");
+
+    html += `<div class="${cls}" data-date="${dStr}">${d.getDate()}</div>`;
+  }
+  $("calGrid").innerHTML = html;
+
+  // クリック
+  $("calGrid").querySelectorAll(".day").forEach(el => {
+    el.addEventListener("click", async () => {
+      const dStr = el.getAttribute("data-date");
+      // 月外は月移動してから選択
+      const d = new Date(dStr + "T00:00:00");
+      if (d.getMonth() !== viewMonth.getMonth()){
+        viewMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+        await loadMonthAndRender(false);
+      }
+      selectedDay = d;
+      $("pickedLabel").textContent = `選択日：${dStr}`;
+      await loadDayOrders(dStr);
+      renderCalendar(); // 選択枠更新
+    });
+  });
+}
+
+async function loadDayOrders(dayStr){
   $("msg").textContent = "";
   $("list").textContent = "読み込み中...";
 
-  const from = $("fromDate").value;
-  const to = $("toDate").value;
-  const status = $("status").value;
-
   const url = new URL(GAS_WEB_APP_URL);
-  url.searchParams.set("mode", "getOrders");
-  if (from) url.searchParams.set("from", from);
-  if (to) url.searchParams.set("to", to);
-  if (status) url.searchParams.set("status", status);
+  url.searchParams.set("mode","getOrders");
+  url.searchParams.set("from", dayStr);
+  url.searchParams.set("to", dayStr);
 
-  try {
+  try{
     const res = await fetch(url.toString());
     const json = await res.json();
     if (!json.ok) throw new Error(json.error || "getOrders failed");
-
     renderList(json.orders || []);
-  } catch (e) {
+  }catch(e){
     $("list").textContent = "";
     $("msg").textContent = "取得エラー: " + e.message;
   }
 }
 
-function renderList(orders) {
-  if (!orders.length) {
-    $("list").textContent = "該当なし";
+function renderList(orders){
+  if(!orders.length){
+    $("list").textContent = "この日の履歴はありません";
     return;
   }
 
@@ -64,70 +120,101 @@ function renderList(orders) {
     const itemsHtml = (o.items || []).map(it => `
       <div class="row">
         <div>${escapeHtml(it.product_name_at_sale)} × ${Number(it.qty||0)}</div>
-        <div>¥${Number(it.unit_price||0).toLocaleString()} / 小計 ¥${Number(it.line_total||0).toLocaleString()}</div>
+        <div>¥${Number(it.line_total||0).toLocaleString()}</div>
       </div>
     `).join("");
-
-    const handedView = o.handed_at_view ? escapeHtml(o.handed_at_view) : "-";
 
     return `
       <div class="card">
         <div class="row">
           <div>
-            <div style="font-weight:700;">
-              受付 #${escapeHtml(o.display_no)}　${badge(o.status)}
+            <div style="font-weight:900;">
+              #${escapeHtml(o.display_no)}　${statusJa(o.status)}
             </div>
-            <div class="muted">
-              作成: ${escapeHtml(o.created_at)} / 受渡: ${handedView}
+            <div class="sub">
+              ${escapeHtml(o.created_at)}
             </div>
           </div>
-          <div style="font-weight:700;">¥${Number(o.total||0).toLocaleString()}</div>
+          <div style="font-weight:900;">¥${Number(o.total||0).toLocaleString()}</div>
         </div>
 
         <details style="margin-top:8px;">
           <summary>内訳</summary>
-          <div class="items">
-            ${itemsHtml || "<div class='muted'>内訳なし</div>"}
-          </div>
+          <div class="items">${itemsHtml || "<div class='sub'>内訳なし</div>"}</div>
         </details>
 
-        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
-          <button onclick="setStatus('${escapeHtml(o.order_id)}','handed')">handed</button>
-          <button onclick="setStatus('${escapeHtml(o.order_id)}','pending')">pendingに戻す</button>
-          <button onclick="setStatus('${escapeHtml(o.order_id)}','cancelled')">cancelled</button>
-        </div>
+        ${o.status !== "cancelled" ? `
+          <div style="margin-top:10px;">
+            <button class="btn-cancel" onclick="cancelOrder('${escapeHtml(o.order_id)}')">キャンセル</button>
+          </div>
+        ` : ``}
       </div>
     `;
   }).join("");
 }
 
-async function setStatus(orderId, status) {
-  if (!confirm(`注文 ${orderId} を ${status} に変更しますか？`)) return;
+async function cancelOrder(orderId){
+  if(!confirm(`注文 ${orderId} をキャンセルしますか？`)) return;
 
-  try {
+  try{
     const res = await fetch(GAS_WEB_APP_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({
-        mode: "updateOrderStatus",
+        mode:"updateOrderStatus",
         order_id: orderId,
-        status
+        status:"cancelled"
       })
     });
-
     const json = await res.json();
-    if (!json.ok) throw new Error(json.error || "update failed");
+    if(!json.ok) throw new Error(json.error || "cancel failed");
 
-    await loadOrders();
-  } catch (e) {
-    alert("更新エラー: " + e.message);
+    // 再読込
+    const dStr = ymd(selectedDay);
+    await loadMonthAndRender(true);
+    await loadDayOrders(dStr);
+  }catch(e){
+    alert("キャンセル失敗: " + e.message);
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  setQuickRange(0);
-  $("btnReload").addEventListener("click", loadOrders);
-  $("btnToday").addEventListener("click", () => { setQuickRange(0); loadOrders(); });
-  $("btn7days").addEventListener("click", () => { setQuickRange(6); loadOrders(); });
-  loadOrders();
+async function loadMonthAndRender(keepSelected){
+  $("msg").textContent = "";
+  const monthStr = ym(viewMonth);
+  try{
+    await fetchMonthDays(monthStr);
+
+    // 選択日が月外なら月初に合わせる
+    if(!keepSelected){
+      selectedDay = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 1);
+      $("pickedLabel").textContent = `選択日：${ymd(selectedDay)}`;
+    }
+
+    renderCalendar();
+  }catch(e){
+    $("msg").textContent = "カレンダー取得エラー: " + e.message;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  // 初期：今月/今日
+  const now = new Date();
+  viewMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  selectedDay = now;
+  $("pickedLabel").textContent = `選択日：${ymd(selectedDay)}`;
+
+  $("prevMonth").addEventListener("click", async () => {
+    viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth()-1, 1);
+    await loadMonthAndRender(false);
+    $("list").textContent = "";
+  });
+
+  $("nextMonth").addEventListener("click", async () => {
+    viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth()+1, 1);
+    await loadMonthAndRender(false);
+    $("list").textContent = "";
+  });
+
+  await loadMonthAndRender(true);
+  await loadDayOrders(ymd(selectedDay));
 });
