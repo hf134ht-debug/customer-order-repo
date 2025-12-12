@@ -641,13 +641,6 @@ qs("#btnLoadLast").addEventListener("click", async () => {
     return;
   }
 
-(async function init(){
-  if (!GAS_WEB_APP_URL || !GAS_WEB_APP_URL.includes("script.google.com")) {
-    setMsg("err", "GAS_WEB_APP_URL が未設定です。");
-    qs("#productsLoading").style.display = "none";
-    return;
-  }
-
   await loadProducts();
   updateTotals();
 
