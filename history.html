@@ -6,17 +6,34 @@
   <title>履歴</title>
 
   <style>
-    body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif; margin:14px;}
-    header{display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;}
-    nav a{margin-right:10px; text-decoration:none;}
-    .bar{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin:12px 0;}
-    .bar label{font-size:12px; display:block; opacity:.8;}
-    .bar input,.bar select{padding:6px;}
-    button{padding:8px 10px; cursor:pointer;}
-    .card{border:1px solid #ddd; border-radius:12px; padding:10px; margin:10px 0;}
-    .row{display:flex; justify-content:space-between; gap:10px; align-items:center;}
-    .muted{font-size:12px; opacity:.8;}
-    .items{margin-top:8px; display:flex; flex-direction:column; gap:6px;}
+    body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;margin:14px;}
+    header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
+    nav a{margin-right:10px;text-decoration:none;}
+
+    .cal-wrap{max-width:520px;}
+    .cal-head{display:flex;justify-content:space-between;align-items:center;margin:10px 0;}
+    .cal-head button{padding:6px 10px;cursor:pointer;}
+    .cal-title{font-weight:800;font-size:18px;}
+
+    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+    .dow{font-size:12px;opacity:.7;text-align:center;}
+    .day{
+      height:44px;border:1px solid #ddd;border-radius:10px;
+      display:flex;align-items:center;justify-content:center;
+      cursor:pointer; user-select:none;
+      background:#fff;
+    }
+    .day.off{opacity:.35;cursor:default;}
+    .day.has{border-width:2px;}
+    .day.sel{outline:3px solid #00000022;}
+    .day.today{font-weight:800;}
+    .msg{color:#c00;margin:8px 0;}
+    .list{margin-top:12px;max-width:720px;}
+    .card{border:1px solid #ddd;border-radius:14px;padding:10px;margin:10px 0;}
+    .row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
+    .sub{font-size:12px;opacity:.8;margin-top:2px;}
+    .items{margin-top:8px;display:flex;flex-direction:column;gap:6px;}
+    .btn-cancel{padding:8px 12px;cursor:pointer;border-radius:10px;border:1px solid #999;background:#fff;}
   </style>
 
   <script>
@@ -27,39 +44,26 @@
   <header>
     <h2>履歴</h2>
     <nav>
-      <a href="./customer.html">customer</a>
       <a href="./staff_handoff.html">受け渡し</a>
       <a href="./history.html">履歴</a>
     </nav>
   </header>
 
-  <div class="bar">
-    <div>
-      <label>From</label>
-      <input id="fromDate" type="date">
-    </div>
-    <div>
-      <label>To</label>
-      <input id="toDate" type="date">
-    </div>
-    <div>
-      <label>Status</label>
-      <select id="status">
-        <option value="">すべて</option>
-        <option value="pending">pending</option>
-        <option value="handed">handed</option>
-        <option value="auto_handed">auto_handed</option>
-        <option value="cancelled">cancelled</option>
-      </select>
+  <div class="cal-wrap">
+    <div class="cal-head">
+      <button id="prevMonth">←</button>
+      <div class="cal-title" id="calTitle"></div>
+      <button id="nextMonth">→</button>
     </div>
 
-    <button id="btnReload">表示</button>
-    <button id="btnToday">今日</button>
-    <button id="btn7days">直近7日</button>
+    <div class="cal-grid" id="calDow"></div>
+    <div class="cal-grid" id="calGrid"></div>
+
+    <div class="sub" id="pickedLabel"></div>
+    <div class="msg" id="msg"></div>
   </div>
 
-  <div id="msg" style="color:#c00; margin:8px 0;"></div>
-  <div id="list"></div>
+  <div class="list" id="list"></div>
 
   <script src="./history.js"></script>
 </body>
