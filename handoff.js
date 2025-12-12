@@ -149,6 +149,7 @@ function renderAll() {
   ordersOther.forEach(o => {
     const row = document.createElement("div");
     row.className = "otherRow";
+    row.dataset.orderId = o.order_id;
     row.innerHTML = `
       <div>
         <div style="font-weight:900;">No.${Number(o.display_no||0)}</div>
@@ -164,6 +165,7 @@ function renderAll() {
 function renderCard(o, compact, isRankMode, index) {
   const el = document.createElement("div");
   el.className = "card" + (compact ? " compact" : "");
+  el.dataset.orderId = o.order_id;
 
   const items = Array.isArray(o.items) ? o.items : [];
   const lines = items.length
@@ -481,16 +483,29 @@ async function saveDraft() {
   }
 }
 
+function removeOrderLocally(order_id) {
+  // state から消す
+  ordersMain = ordersMain.filter(o => o.order_id !== order_id);
+  ordersOther = ordersOther.filter(o => o.order_id !== order_id);
+
+  // UIを即反映（ネットワーク待ちなし）
+  renderAll();
+}
+
 async function completeOrder(order_id) {
   if (!confirm("受け渡し完了にします。よろしいですか？")) return;
   try {
     const json = await apiPost({ mode:"staffMarkHanded", order_id, actor:"staff" });
     if (!json.ok) throw new Error(json.error || "失敗");
+    // ✅ ここで即消す
+    removeOrderLocally(order_id);
+    // モーダル開いてたら閉じる（対象が同じなら）
     if (editingOrder && editingOrder.order_id === order_id) {
       await unlockEditingOrder();
       closeEditor();
     }
-    await refresh({ silent:true });
+    // 整合性確認（任意。残してOK）
+    refresh({ silent:true });
   } catch (err) {
     setMsg("err", `完了できませんでした。\n詳細: ${String(err.message||err)}`);
   }
@@ -501,11 +516,13 @@ async function cancelOrder(order_id) {
   try {
     const json = await apiPost({ mode:"cancelOrder", order_id, actor:"staff" });
     if (!json.ok) throw new Error(json.error || "失敗");
+    // ✅ 即消す
+    removeOrderLocally(order_id);
     if (editingOrder && editingOrder.order_id === order_id) {
       await unlockEditingOrder();
       closeEditor();
     }
-    await refresh({ silent:true });
+    refresh({ silent:true });
   } catch (err) {
     setMsg("err", `キャンセルできませんでした。\n詳細: ${String(err.message||err)}`);
   }
