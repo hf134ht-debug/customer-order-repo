@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>お客さん用レジ</title>
+  <style>
+    :root { --bg:#f7f7fb; --card:#fff; --line:#e8e8ef; --text:#111; --muted:#666; --danger:#c0392b; --ok:#1e824c; }
+    body { margin:0; font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif; background:var(--bg); color:var(--text); }
+    header { position:sticky; top:0; z-index:5; background:rgba(247,247,251,.92); backdrop-filter: blur(10px); border-bottom:1px solid var(--line); }
+    .wrap { max-width: 720px; margin:0 auto; padding: 10px 12px 80px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:10px; padding: 10px 0; }
+    .title { font-weight: 800; font-size: 18px; }
+    .pill { padding: 6px 10px; border:1px solid var(--line); border-radius: 999px; background:var(--card); font-weight:700; }
+    .totalTop { font-size: 18px; }
+    .tabs { display:flex; gap:8px; padding: 0 0 10px; }
+    .tabbtn { flex:1; padding:10px; border-radius: 12px; border:1px solid var(--line); background:var(--card); font-weight:800; }
+    .tabbtn.active { outline: 2px solid #111; }
+    .grid { display:flex; flex-direction: column; gap: 10px; }
+    .itemCard { background:var(--card); border:1px solid var(--line); border-radius: 16px; padding: 12px; }
+    .row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .name { font-weight: 900; font-size: 16px; }
+    .price { font-weight: 900; }
+    .soldout { color: var(--muted); opacity:.55; filter: grayscale(1); }
+    .qty { display:flex; align-items:center; gap:8px; }
+    .btn { border:1px solid var(--line); background:var(--card); padding: 10px 12px; border-radius: 12px; font-weight:800; }
+    .btn:disabled { opacity:.45; }
+    .btnPrimary { background:#111; color:#fff; border-color:#111; }
+    .btnDanger { background: var(--danger); color:#fff; border-color: var(--danger); }
+    .btnGhost { background: transparent; }
+    input[type="number"] { width: 70px; padding: 10px; border-radius: 12px; border:1px solid var(--line); font-weight:800; }
+    .detailToggle { margin-top: 10px; width: 100%; display:flex; justify-content:space-between; align-items:center; }
+    .detailPanel { display:none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); color: var(--text); }
+    .detailPanel.open { display:block; }
+    .muted { color: var(--muted); font-size: 12px; }
+    .desc { white-space: pre-wrap; font-size: 14px; line-height: 1.45; }
+    .img { width:100%; border-radius: 12px; margin-top: 8px; border: 1px solid var(--line); }
+    .videoWrap { margin-top: 8px; }
+    .videoWrap iframe { width:100%; aspect-ratio: 16/9; border:0; border-radius: 12px; border:1px solid var(--line); }
+    .bottomBar { position: fixed; left:0; right:0; bottom:0; z-index:6; background: rgba(247,247,251,.92); backdrop-filter: blur(10px); border-top:1px solid var(--line); }
+    .bottomInner { max-width:720px; margin:0 auto; padding: 10px 12px; display:flex; gap:10px; align-items:center; }
+    .bottomTotal { flex:1; font-weight: 900; font-size: 16px; }
+    .msg { margin: 10px 0; padding: 10px 12px; border-radius: 12px; border:1px solid var(--line); background: var(--card); }
+    .msg.err { border-color: #f0c0c0; background: #fff5f5; color: var(--danger); }
+    .msg.ok { border-color: #bfe6cf; background: #f3fff7; color: var(--ok); }
+    .overlay { position: fixed; inset:0; background: rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:10; }
+    .overlay.show { display:flex; }
+    .modal { width: min(92vw, 520px); background: var(--card); border-radius: 18px; border:1px solid var(--line); padding: 14px; }
+    .modal h3 { margin: 4px 0 10px; }
+    .modal .actions { display:flex; gap:10px; justify-content:flex-end; margin-top: 12px; }
+    .list { margin: 8px 0; padding-left: 18px; }
+    .kv { display:flex; justify-content:space-between; gap:10px; font-weight:800; }
+    .bigNo { font-size: 44px; font-weight: 900; text-align:center; margin: 6px 0 6px; }
+    .small { font-size: 12px; color: var(--muted); word-break: break-all; }
+    .divider { height:1px; background: var(--line); margin: 12px 0; }
+    .inline { display:flex; gap:8px; align-items:center; }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="wrap">
+      <div class="topbar">
+        <div class="title">お客さん用レジ</div>
+        <div class="pill totalTop" id="totalTop">合計 ¥0</div>
+      </div>
+
+      <div class="tabs">
+        <button class="tabbtn active" id="tabPos">① 注文</button>
+        <button class="tabbtn" id="tabMy">② 注文確認</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div id="msgArea"></div>
+
+    <!-- ① 注文画面 -->
+    <section id="viewPos">
+      <div id="productsLoading" class="msg">商品を読み込み中…</div>
+      <div class="grid" id="productList"></div>
+    </section>
+
+    <!-- ② 注文確認・変更画面 -->
+    <section id="viewMy" style="display:none;">
+      <div class="itemCard">
+        <div class="name">注文を確認</div>
+        <div class="muted">注文確定後に表示される「注文ID」で確認できます。</div>
+        <div class="inline" style="margin-top:10px;">
+          <input id="orderIdInput" type="text" placeholder="注文ID（例：O2025...）" style="flex:1;padding:10px;border-radius:12px;border:1px solid var(--line);font-weight:800;">
+          <button class="btn" id="btnLoadMy">表示</button>
+        </div>
+        <div class="muted" style="margin-top:8px;">
+          直近の注文がある場合は自動で表示できます：
+          <button class="btn btnGhost" id="btnLoadLast">直近の注文</button>
+        </div>
+      </div>
+
+      <div id="myOrderArea" style="margin-top:10px;"></div>
+    </section>
+  </main>
+
+  <!-- 下部 合計＋確定 -->
+  <div class="bottomBar">
+    <div class="bottomInner">
+      <div class="bottomTotal" id="totalBottom">合計 ¥0</div>
+      <button class="btn" id="btnClear">クリア</button>
+      <button class="btn btnPrimary" id="btnCheckout">注文確定</button>
+    </div>
+  </div>
+
+  <!-- overlay / modal -->
+  <div class="overlay" id="overlay">
+    <div class="modal" id="modal">
+      <h3 id="modalTitle">確認</h3>
+      <div id="modalBody"></div>
+      <div class="actions" id="modalActions"></div>
+    </div>
+  </div>
+
+  <script>
+    /************ 必須：あなたのGAS Web App URL ************/
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzeeGTJKZXHsVEw8DMz_QahMsnbqAUzDM3D_9mnv1LpVRxIitpL0F3xlCTwKUjV0OURzQ/exec";
+    /*******************************************************/
+
+    // localStorage keys
+    const LS_LAST_ORDER_ID = "pos_last_order_id";
+
+    // state
+    let products = [];
+    let qtyMap = {};              // product_id -> qty
+    let detailCache = {};         // product_id -> {description,image_url,video_url}
+    let loading = { products:false, checkout:false, my:false };
+
+    // ---------- utils ----------
+    const yen = (n) => "¥" + (Number(n||0)).toLocaleString("ja-JP");
+    const uuid = () => {
+      // RFC4122-ish
+      const a = crypto.getRandomValues(new Uint8Array(16));
+      a[6] = (a[6] & 0x0f) | 0x40;
+      a[8] = (a[8] & 0x3f) | 0x80;
+      const h = [...a].map(x=>x.toString(16).padStart(2,"0")).join("");
+      return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
+    };
+    const qs = (s, el=document) => el.querySelector(s);
+    const qsa = (s, el=document) => [...el.querySelectorAll(s)];
+
+    function setMsg(type, text) {
+      const area = qs("#msgArea");
+      if (!text) { area.innerHTML = ""; return; }
+      const cls = type === "err" ? "msg err" : type === "ok" ? "msg ok" : "msg";
+      area.innerHTML = `<div class="${cls}">${escapeHtml(text)}</div>`;
+    }
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+    }
+
+    function updateTotals() {
+      const total = calcTotal();
+      qs("#totalTop").textContent = `合計 ${yen(total)}`;
+      qs("#totalBottom").textContent = `合計 ${yen(total)}`;
+      return total;
+    }
+
+    function calcTotal() {
+      let total = 0;
+      for (const p of products) {
+        const q = Number(qtyMap[p.product_id] || 0);
+        if (q > 0) total += q * Number(p.price || 0);
+      }
+      return total;
+    }
+
+    function buildOrderItemsFromState() {
+      const items = [];
+      for (const p of products) {
+        const q = Number(qtyMap[p.product_id] || 0);
+        if (q > 0) items.push({ product_id: p.product_id, qty: q, name: p.name, unit_price: p.price, line_total: q * p.price });
+      }
+      return items;
+    }
+
+    function setView(which) {
+      const isPos = which === "pos";
+      qs("#viewPos").style.display = isPos ? "" : "none";
+      qs("#viewMy").style.display = isPos ? "none" : "";
+      qs("#tabPos").classList.toggle("active", isPos);
+      qs("#tabMy").classList.toggle("active", !isPos);
+
+      // POS以外では下部バーは残す（好み次第）→ここでは残す
+      // ただし注文確認中に誤って注文確定しないように、POS以外ではCheckout無効にする
+      qs("#btnCheckout").disabled = !isPos;
+      qs("#btnClear").disabled = !isPos;
+    }
+
+    // ---------- modal ----------
+    function openModal({ title, bodyHtml, actions }) {
+      qs("#modalTitle").textContent = title || "確認";
+      qs("#modalBody").innerHTML = bodyHtml || "";
+      const area = qs("#modalActions");
+      area.innerHTML = "";
+      (actions || []).forEach(a => {
+        const b = document.createElement("button");
+        b.className = a.className || "btn";
+        b.textContent = a.label;
+        b.onclick = () => a.onClick && a.onClick();
+        area.appendChild(b);
+      });
+      qs("#overlay").classList.add("show");
+    }
+    function closeModal() {
+      qs("#overlay").classList.remove("show");
+    }
+    qs("#overlay").addEventListener("click", (e) => {
+      if (e.target.id === "overlay") closeModal();
+    });
+
+    // ---------- API ----------
+    async function apiGet(params) {
+      const url = new URL(GAS_WEB_APP_URL);
+      Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+      const res = await fetch(url.toString(), { method:"GET" });
+      const json = await res.json();
+      return json;
+    }
+
+    async function apiPost(payload) {
+      const res = await fetch(GAS_WEB_APP_URL, {
+        method: "POST",
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      return json;
+    }
+
+    // ---------- Products ----------
+    async function loadProducts() {
+      loading.products = true;
+      setMsg("", "");
+      qs("#productsLoading").style.display = "";
+      qs("#productList").innerHTML = "";
+
+      try {
+        const json = await apiGet({ mode:"getProducts", scope:"customer" });
+        if (!json.ok) throw new Error(json.error || "商品取得に失敗しました。");
+        products = (json.products || []).filter(p => !!p.product_id);
+
+        // init qty
+        qtyMap = {};
+        products.forEach(p => qtyMap[p.product_id] = 0);
+
+        renderProductList();
+        updateTotals();
+        qs("#productsLoading").style.display = "none";
+      } catch (err) {
+        qs("#productsLoading").style.display = "none";
+        setMsg("err", `商品を読み込めませんでした。通信状況を確認してもう一度お試しください。\n詳細: ${String(err.message || err)}`);
+      } finally {
+        loading.products = false;
+      }
+    }
+
+    function renderProductList() {
+      const list = qs("#productList");
+      list.innerHTML = "";
+
+      products.forEach(p => {
+        const sold = !!p.is_sold_out;
+        const el = document.createElement("div");
+        el.className = "itemCard" + (sold ? " soldout" : "");
+        el.dataset.pid = p.product_id;
+
+        el.innerHTML = `
+          <div class="row">
+            <div>
+              <div class="name">${escapeHtml(p.name)} ${sold ? "<span class='muted'>(売切)</span>" : ""}</div>
+              <div class="muted">${escapeHtml(p.product_id)}</div>
+            </div>
+            <div class="price">${yen(p.price)}</div>
+          </div>
+
+          <div class="row" style="margin-top:10px;">
+            <div class="qty">
+              <button class="btn btnGhost btnMinus" ${sold ? "disabled":""}>−</button>
+              <input class="qtyInput" type="number" min="0" value="0" ${sold ? "disabled":""}/>
+              <button class="btn btnGhost btnPlus" ${sold ? "disabled":""}>＋</button>
+            </div>
+            <button class="btn detailToggleBtn" ${sold ? "disabled":""}>
+              詳細 <span class="chev">▼</span>
+            </button>
+          </div>
+
+          <div class="detailPanel" id="detail_${escapeHtml(p.product_id)}">
+            <div class="muted">読み込み中…</div>
+          </div>
+        `;
+
+        // qty handlers
+        const minus = qs(".btnMinus", el);
+        const plus  = qs(".btnPlus", el);
+        const input = qs(".qtyInput", el);
+        minus.addEventListener("click", () => {
+          const v = Math.max(0, Number(input.value||0) - 1);
+          input.value = v;
+          qtyMap[p.product_id] = v;
+          updateTotals();
+        });
+        plus.addEventListener("click", () => {
+          const v = Math.max(0, Number(input.value||0) + 1);
+          input.value = v;
+          qtyMap[p.product_id] = v;
+          updateTotals();
+        });
+        input.addEventListener("input", () => {
+          const v = Math.max(0, Number(input.value||0));
+          qtyMap[p.product_id] = v;
+          updateTotals();
+        });
+
+        // detail toggle (lazy load)
+        const btn = qs(".detailToggleBtn", el);
+        const panel = qs(".detailPanel", el);
+        btn.addEventListener("click", async () => {
+          const isOpen = panel.classList.contains("open");
+          if (isOpen) {
+            panel.classList.remove("open");
+            btn.querySelector(".chev").textContent = "▼";
+            return;
+          }
+          panel.classList.add("open");
+          btn.querySelector(".chev").textContent = "▲";
+          await ensureProductDetailLoaded(p.product_id, panel);
+        });
+
+        list.appendChild(el);
+      });
+    }
+
+    async function ensureProductDetailLoaded(productId, panelEl) {
+      if (detailCache[productId]) {
+        renderDetailPanel(panelEl, detailCache[productId], productId);
+        return;
+      }
+      panelEl.innerHTML = `<div class="muted">読み込み中…</div>`;
+
+      try {
+        const json = await apiGet({ mode:"getProductDetail", product_id: productId });
+        if (!json.ok) throw new Error(json.error || "詳細取得に失敗しました。");
+
+        detailCache[productId] = json.product || { description:"", image_url:"", video_url:"" };
+        renderDetailPanel(panelEl, detailCache[productId], productId);
+      } catch (err) {
+        panelEl.innerHTML = `
+          <div class="msg err">詳細を読み込めませんでした。<br>詳細: ${escapeHtml(String(err.message||err))}<br>
+          <button class="btn" data-retry="1">再試行</button></div>
+        `;
+        const retry = qs('[data-retry="1"]', panelEl);
+        retry.addEventListener("click", () => ensureProductDetailLoaded(productId, panelEl));
+      }
+    }
+
+    function toYoutubeEmbed(url) {
+      const u = String(url||"").trim();
+      if (!u) return "";
+      // youtu.be/ID or youtube.com/watch?v=ID
+      try {
+        const x = new URL(u);
+        if (x.hostname.includes("youtu.be")) {
+          const id = x.pathname.replace("/","").trim();
+          return id ? `https://www.youtube.com/embed/${id}` : "";
+        }
+        if (x.hostname.includes("youtube.com")) {
+          const id = x.searchParams.get("v");
+          return id ? `https://www.youtube.com/embed/${id}` : "";
+        }
+        return "";
+      } catch {
+        return "";
+      }
+    }
+
+    function renderDetailPanel(panelEl, d, productId) {
+      const desc = String(d.description || "").trim();
+      const img  = String(d.image_url || "").trim();
+      const vid  = String(d.video_url || "").trim();
+      const yEmbed = toYoutubeEmbed(vid);
+
+      // 動画は「ボタン押したらiframe挿入」＝本当の遅延
+      panelEl.innerHTML = `
+        ${desc ? `<div class="desc">${escapeHtml(desc)}</div>` : `<div class="muted">説明はありません</div>`}
+        ${img ? `<img class="img" loading="lazy" src="${escapeHtml(img)}" alt="商品画像">` : ``}
+        ${vid ? `
+          <div class="videoWrap">
+            <button class="btn" data-video-btn="1">▶ 動画を見る</button>
+            <div data-video-area="1"></div>
+            <div class="muted small">${escapeHtml(vid)}</div>
+          </div>` : ``}
+      `;
+
+      const btn = qs('[data-video-btn="1"]', panelEl);
+      if (btn) {
+        btn.addEventListener("click", () => {
+          const area = qs('[data-video-area="1"]', panelEl);
+          // YouTubeならembed、その他はリンク案内
+          if (yEmbed) {
+            area.innerHTML = `<iframe src="${escapeHtml(yEmbed)}" allowfullscreen></iframe>`;
+          } else {
+            area.innerHTML = `<div class="msg">この動画は埋め込みに対応していません。<br><a href="${escapeHtml(vid)}" target="_blank" rel="noopener">リンクを開く</a></div>`;
+          }
+          btn.disabled = true;
+          btn.textContent = "表示中";
+        });
+      }
+    }
+
+    // ---------- Checkout (A1/A2/A3) ----------
+    async function checkoutFlow() {
+      setMsg("", "");
+
+      const items = buildOrderItemsFromState();
+      const total = updateTotals();
+
+      if (items.length === 0) {
+        setMsg("err", "商品が選択されていません。数量を入力してください。");
+        return;
+      }
+
+      // A2: 確認ダイアログ
+      const lines = items.map(it => `<li>${escapeHtml(it.name)} × ${it.qty}（${yen(it.line_total)}）</li>`).join("");
+      openModal({
+        title: "この内容で注文しますか？",
+        bodyHtml: `
+          <div class="kv"><div>合計</div><div>${yen(total)}</div></div>
+          <div class="divider"></div>
+          <div><b>内訳</b></div>
+          <ul class="list">${lines}</ul>
+          <div class="muted">注文確定後は、受け渡し完了になるまで内容を変更できます。</div>
+        `,
+        actions: [
+          { label:"戻る", className:"btn", onClick: () => closeModal() },
+          { label:"注文する", className:"btn btnPrimary", onClick: async () => {
+              closeModal();
+              await doCreateOrder(items);
+            }
+          },
+        ]
+      });
+    }
+
+    async function doCreateOrder(items) {
+      if (loading.checkout) return; // 二重防止
+      loading.checkout = true;
+
+      // A1: ローディング（送信中）
+      qs("#btnCheckout").disabled = true;
+      qs("#btnClear").disabled = true;
+
+      openModal({
+        title: "送信中…",
+        bodyHtml: `<div class="msg">注文を送信しています。しばらくお待ちください。</div>`,
+        actions: []
+      });
+
+      const clientToken = uuid();
+
+      try {
+        const payload = {
+          mode: "createOrder",
+          source: "customer",
+          client_token: clientToken,
+          items: items.map(x => ({ product_id: x.product_id, qty: x.qty })),
+        };
+        const json = await apiPost(payload);
+
+        if (!json.ok) throw new Error(json.error || "注文の送信に失敗しました。");
+
+        // 成功
+        const order = json.order;
+        localStorage.setItem(LS_LAST_ORDER_ID, order.order_id);
+
+        // 数量リセット
+        qtyMap = Object.fromEntries(products.map(p => [p.product_id, 0]));
+        renderProductList();
+        updateTotals();
+
+        // 完了表示（受付番号＋注文ID）
+        openModal({
+          title: "ご注文ありがとうございました",
+          bodyHtml: `
+            <div class="muted" style="text-align:center;">受付番号</div>
+            <div class="bigNo">No.${Number(order.display_no||0)}</div>
+            <div class="kv"><div>合計</div><div>${yen(order.total)}</div></div>
+            <div class="divider"></div>
+            <div class="muted">注文ID（控え）</div>
+            <div class="small">${escapeHtml(order.order_id)}</div>
+            <div class="divider"></div>
+            <div class="muted">この画面を閉じたあとも「②注文確認」で注文IDから確認・変更できます。</div>
+          `,
+          actions: [
+            { label:"閉じる", className:"btn", onClick: () => closeModal() },
+            { label:"②で確認する", className:"btn btnPrimary", onClick: async () => {
+                closeModal();
+                qs("#orderIdInput").value = order.order_id;
+                setView("my");
+                await loadMyOrder(order.order_id);
+              }
+            },
+          ]
+        });
+
+      } catch (err) {
+        // A3: エラー表示（再試行導線）
+        closeModal();
+        setMsg("err",
+          "注文を送信できませんでした。通信状況を確認して、もう一度お試しください。\n" +
+          "（送信が完了している可能性がある場合は、②注文確認で『直近の注文』を確認してください）\n" +
+          `詳細: ${String(err.message || err)}`
+        );
+      } finally {
+        loading.checkout = false;
+        qs("#btnCheckout").disabled = false;
+        qs("#btnClear").disabled = false;
+      }
+    }
+
+    // ---------- My Order ----------
+    function statusText(status) {
+      // 「準備中」は不要 → 最小限
+      if (status === "pending") return "受付済み";
+      if (status === "handed" || status === "auto_handed") return "受け渡し完了（変更不可）";
+      if (status === "cancelled") return "キャンセル";
+      return status || "";
+    }
+
+    async function loadMyOrder(orderId) {
+      if (!orderId) return;
+      loading.my = true;
+      setMsg("", "");
+      qs("#myOrderArea").innerHTML = `<div class="msg">読み込み中…</div>`;
+
+      try {
+        const json = await apiGet({ mode:"getMyOrder", order_id: orderId });
+        if (!json.ok) throw new Error(json.error || "注文の取得に失敗しました。");
+        renderMyOrder(json.order, json.items);
+      } catch (err) {
+        qs("#myOrderArea").innerHTML = `
+          <div class="msg err">
+            注文を取得できませんでした。注文IDを確認してもう一度お試しください。<br>
+            詳細: ${escapeHtml(String(err.message || err))}
+          </div>
+        `;
+      } finally {
+        loading.my = false;
+      }
+    }
+
+    function renderMyOrder(order, items) {
+      const editable = (order.status === "pending") && (order.lock_state !== "staff_edit");
+      const locked = (order.lock_state === "staff_edit");
+
+      const linesHtml = (items || []).map(it => {
+        const canEditLine = editable;
+        return `
+          <div class="row" style="margin-top:8px; align-items:flex-start;">
+            <div style="flex:1;">
+              <div style="font-weight:900;">${escapeHtml(it.product_name_at_sale)}</div>
+              <div class="muted">${yen(it.unit_price)} / 個</div>
+            </div>
+            <div class="qty">
+              <button class="btn btnGhost myMinus" data-pid="${escapeHtml(it.product_id)}" ${canEditLine ? "" : "disabled"}>−</button>
+              <input class="myQty" data-pid="${escapeHtml(it.product_id)}" type="number" min="0" value="${Number(it.qty||0)}" ${canEditLine ? "" : "disabled"} />
+              <button class="btn btnGhost myPlus" data-pid="${escapeHtml(it.product_id)}" ${canEditLine ? "" : "disabled"}>＋</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      const hint = locked ? "スタッフが内容を確認中です。しばらくしてからお試しください。" :
+                    editable ? "受け渡し完了になるまで、内容を変更できます。" :
+                    "この注文は変更できません。";
+
+      qs("#myOrderArea").innerHTML = `
+        <div class="itemCard">
+          <div class="row">
+            <div>
+              <div class="name">No.${Number(order.display_no||0)}</div>
+              <div class="muted">状態：${escapeHtml(statusText(order.status))}</div>
+            </div>
+            <div class="price">${yen(order.total)}</div>
+          </div>
+          <div class="muted small" style="margin-top:6px;">注文ID：${escapeHtml(order.order_id)}</div>
+          ${order.memo ? `<div class="msg" style="margin-top:10px;"><b>メモ</b><br>${escapeHtml(order.memo)}</div>` : ``}
+          <div class="divider"></div>
+
+          <div><b>内訳</b></div>
+          ${linesHtml}
+
+          <div class="divider"></div>
+          <div class="kv"><div>合計</div><div id="myTotal">${yen(order.total)}</div></div>
+          <div class="muted" style="margin-top:8px;">${escapeHtml(hint)}</div>
+
+          <div class="row" style="margin-top:12px; justify-content:flex-end;">
+            <button class="btn btnDanger" id="btnCancel" ${editable ? "" : "disabled"}>キャンセル</button>
+            <button class="btn btnPrimary" id="btnSave" ${editable ? "" : "disabled"}>変更を保存</button>
+          </div>
+        </div>
+      `;
+
+      // wire qty changes in-memory
+      const qtyNow = {};
+      (items||[]).forEach(it => qtyNow[it.product_id] = Number(it.qty||0));
+
+      function recalcMyTotal() {
+        let t = 0;
+        (items||[]).forEach(it => {
+          const q = Number(qtyNow[it.product_id] || 0);
+          t += q * Number(it.unit_price||0);
+        });
+        qs("#myTotal").textContent = yen(t);
+        return t;
+      }
+
+      qsa(".myMinus").forEach(b => b.addEventListener("click", () => {
+        const pid = b.dataset.pid;
+        qtyNow[pid] = Math.max(0, Number(qtyNow[pid]||0) - 1);
+        qs(`.myQty[data-pid="${pid}"]`).value = qtyNow[pid];
+        recalcMyTotal();
+      }));
+      qsa(".myPlus").forEach(b => b.addEventListener("click", () => {
+        const pid = b.dataset.pid;
+        qtyNow[pid] = Math.max(0, Number(qtyNow[pid]||0) + 1);
+        qs(`.myQty[data-pid="${pid}"]`).value = qtyNow[pid];
+        recalcMyTotal();
+      }));
+      qsa(".myQty").forEach(inp => inp.addEventListener("input", () => {
+        const pid = inp.dataset.pid;
+        qtyNow[pid] = Math.max(0, Number(inp.value||0));
+        recalcMyTotal();
+      }));
+
+      // save
+      qs("#btnSave").addEventListener("click", async () => {
+        if (!editable) return;
+
+        const newItems = (items||[])
+          .map(it => ({ product_id: it.product_id, qty: Number(qtyNow[it.product_id]||0) }))
+          .filter(x => x.qty > 0);
+
+        if (newItems.length === 0) {
+          setMsg("err", "すべて0個にはできません。キャンセルする場合はキャンセルを押してください。");
+          return;
+        }
+
+        // A2: 確認
+        openModal({
+          title: "変更を保存しますか？",
+          bodyHtml: `<div class="msg">内容を更新します。よろしいですか？</div>`,
+          actions: [
+            { label:"戻る", className:"btn", onClick: () => closeModal() },
+            { label:"保存する", className:"btn btnPrimary", onClick: async () => {
+              closeModal();
+              await saveMyOrder(order.order_id, newItems);
+            } }
+          ]
+        });
+      });
+
+      // cancel
+      qs("#btnCancel").addEventListener("click", async () => {
+        if (!editable) return;
+
+        openModal({
+          title: "キャンセルしますか？",
+          bodyHtml: `<div class="msg err">この注文をキャンセルします。よろしいですか？</div>`,
+          actions: [
+            { label:"戻る", className:"btn", onClick: () => closeModal() },
+            { label:"キャンセルする", className:"btn btnDanger", onClick: async () => {
+              closeModal();
+              await cancelMyOrder(order.order_id);
+            } }
+          ]
+        });
+      });
+    }
+
+    async function saveMyOrder(orderId, items) {
+      // A1: ローディング
+      openModal({ title:"保存中…", bodyHtml:`<div class="msg">変更を保存しています…</div>`, actions:[] });
+
+      try {
+        const json = await apiPost({
+          mode: "updateOrderItems",
+          order_id: orderId,
+          actor: "customer",
+          items
+        });
+        if (!json.ok) throw new Error(json.error || "保存に失敗しました。");
+
+        closeModal();
+        setMsg("ok", "変更を保存しました。");
+        await loadMyOrder(orderId);
+      } catch (err) {
+        closeModal();
+        setMsg("err", `変更を保存できませんでした。通信状況を確認して、もう一度お試しください。\n詳細: ${String(err.message||err)}`);
+      }
+    }
+
+    async function cancelMyOrder(orderId) {
+      openModal({ title:"処理中…", bodyHtml:`<div class="msg">キャンセルしています…</div>`, actions:[] });
+
+      try {
+        const json = await apiPost({ mode:"cancelOrder", order_id: orderId });
+        if (!json.ok) throw new Error(json.error || "キャンセルに失敗しました。");
+
+        closeModal();
+        setMsg("ok", "キャンセルしました。");
+        await loadMyOrder(orderId);
+      } catch (err) {
+        closeModal();
+        setMsg("err", `キャンセルできませんでした。通信状況を確認して、もう一度お試しください。\n詳細: ${String(err.message||err)}`);
+      }
+    }
+
+    // ---------- UI buttons ----------
+    qs("#tabPos").addEventListener("click", () => setView("pos"));
+    qs("#tabMy").addEventListener("click", () => setView("my"));
+
+    qs("#btnClear").addEventListener("click", () => {
+      qtyMap = Object.fromEntries(products.map(p => [p.product_id, 0]));
+      renderProductList();
+      updateTotals();
+      setMsg("", "");
+    });
+
+    qs("#btnCheckout").addEventListener("click", checkoutFlow);
+
+    qs("#btnLoadMy").addEventListener("click", async () => {
+      const id = qs("#orderIdInput").value.trim();
+      if (!id) { setMsg("err", "注文IDを入力してください。"); return; }
+      setView("my");
+      await loadMyOrder(id);
+    });
+
+    qs("#btnLoadLast").addEventListener("click", async () => {
+      const id = localStorage.getItem(LS_LAST_ORDER_ID) || "";
+      if (!id) { setMsg("err", "直近の注文が見つかりませんでした。"); return; }
+      qs("#orderIdInput").value = id;
+      setView("my");
+      await loadMyOrder(id);
+    });
+
+    // ---------- start ----------
+    (async function init(){
+      // URL未設定チェック
+      if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.includes("PASTE_YOUR_GAS_WEB_APP_URL_HERE")) {
+        setMsg("err", "GAS_WEB_APP_URL が未設定です。customer.html の先頭でURLを貼り付けてください。");
+        qs("#productsLoading").style.display = "none";
+        return;
+      }
+
+      // 初回読み込み
+      await loadProducts();
+      updateTotals();
+
+      // 直近注文があれば②に出せる（押しボタンで）
+      const last = localStorage.getItem(LS_LAST_ORDER_ID) || "";
+      if (last) {
+        qs("#btnLoadLast").style.display = "";
+      } else {
+        qs("#btnLoadLast").style.display = "none";
+      }
+    })();
+  </script>
+</body>
+</html>
