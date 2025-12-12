@@ -10,6 +10,39 @@ let detailCache = {};
 let loading = { products:false, checkout:false, my:false };
 let submitToken = null; // ★二重送信対策：送信中は同じtokenを使う
 
+// ★強化：通信失敗→再送でも同じ注文になるように、sessionStorage に一時保存
+const SUBMIT_TOKEN_KEY = "pos_submit_token";
+const SUBMIT_TOKEN_TS_KEY = "pos_submit_token_ts";
+const SUBMIT_TOKEN_TTL_MS = 2 * 60 * 1000; // 2分だけ有効（必要なら延ばせます）
+
+function loadSubmitToken() {
+  try {
+    const t = (sessionStorage.getItem(SUBMIT_TOKEN_KEY) || "").trim();
+    const ts = Number(sessionStorage.getItem(SUBMIT_TOKEN_TS_KEY) || "0");
+    if (!t || !ts) return null;
+    if (Date.now() - ts > SUBMIT_TOKEN_TTL_MS) {
+      clearSubmitToken();
+      return null;
+    }
+    return t;
+  } catch { return null; }
+}
+
+function saveSubmitToken(t) {
+  try {
+    sessionStorage.setItem(SUBMIT_TOKEN_KEY, t);
+    sessionStorage.setItem(SUBMIT_TOKEN_TS_KEY, String(Date.now()));
+  } catch {}
+}
+
+function clearSubmitToken() {
+  submitToken = null;
+  try {
+    sessionStorage.removeItem(SUBMIT_TOKEN_KEY);
+    sessionStorage.removeItem(SUBMIT_TOKEN_TS_KEY);
+  } catch {}
+}
+
 let editOrderId = null;
 let editOriginalItems = null; // ←キャンセルで戻す用（itemsスナップショット）
 
@@ -333,8 +366,9 @@ async function doCreateOrder(items) {
   loading.checkout = true;
   qs("#btnCheckout").disabled = true;
 
-  // ★送信中は同じトークンを使い回す（連打・再送でも同一注文になる）
-  if (!submitToken) submitToken = uuid();
+  // ★送信トークン：同一セッション内の再送も同じtokenを使う
+  submitToken = submitToken || loadSubmitToken() || uuid();
+  saveSubmitToken(submitToken);
 
   openModal({ title:"送信中…", bodyHtml:`<div class="msg">注文を送信しています…</div>`, actions:[] });
 
@@ -350,12 +384,15 @@ async function doCreateOrder(items) {
     const order = json.order;
     localStorage.setItem(LS_LAST_ORDER_ID, order.order_id);
 
-    // ★URLにも注文IDを反映（履歴に残さない）
+    // ★URLにも注文IDを反映
     try {
       const u = new URL(location.href);
       u.searchParams.set("order_id", order.order_id);
       history.replaceState(null, "", u.toString());
     } catch {}
+
+    // ★ここで token を確実に破棄（成功したら次は新token）
+    clearSubmitToken();
 
     qtyMap = Object.fromEntries(products.map(p => [p.product_id, 0]));
     renderProductList();
@@ -386,11 +423,11 @@ async function doCreateOrder(items) {
 
   } catch (err) {
     closeModal();
-    setMsg("err", `注文を送信できませんでした。\n詳細: ${String(err.message || err)}`);
+    // ★失敗時は token を捨てない → 再送しても同じ注文として扱える
+    setMsg("err", `注文を送信できませんでした。\n詳細: ${String(err.message || err)}\n\n※通信が不安定な場合は、もう一度「注文確定」を押してください（同じ注文として再送されます）。`);
   } finally {
     loading.checkout = false;
     qs("#btnCheckout").disabled = false;
-    submitToken = null; // ★成功でも失敗でもリセット（次の注文は新token）
   }
 }
 
@@ -656,3 +693,4 @@ qs("#btnLoadLast").addEventListener("click", async () => {
   const last = localStorage.getItem(LS_LAST_ORDER_ID) || "";
   qs("#btnLoadLast").style.display = last ? "" : "none";
 })();
+
