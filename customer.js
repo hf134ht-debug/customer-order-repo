@@ -8,6 +8,7 @@ let products = [];
 let qtyMap = {};        // product_id -> qty
 let detailCache = {};
 let loading = { products:false, checkout:false, my:false };
+let submitToken = null; // ★二重送信対策：送信中は同じtokenを使う
 
 let editOrderId = null;
 let editOriginalItems = null; // ←キャンセルで戻す用（itemsスナップショット）
@@ -332,19 +333,23 @@ async function doCreateOrder(items) {
   loading.checkout = true;
   qs("#btnCheckout").disabled = true;
 
+  // ★送信中は同じトークンを使い回す（連打・再送でも同一注文になる）
+  if (!submitToken) submitToken = uuid();
+
   openModal({ title:"送信中…", bodyHtml:`<div class="msg">注文を送信しています…</div>`, actions:[] });
 
   try {
     const json = await apiPost({
       mode: "createOrder",
       source: "customer",
-      client_token: uuid(),
+      client_token: submitToken, // ★ここが重要
       items: items.map(x => ({ product_id: x.product_id, qty: x.qty })),
     });
     if (!json.ok) throw new Error(json.error || "注文の送信に失敗しました。");
 
     const order = json.order;
     localStorage.setItem(LS_LAST_ORDER_ID, order.order_id);
+
     // ★URLにも注文IDを反映（履歴に残さない）
     try {
       const u = new URL(location.href);
@@ -385,6 +390,7 @@ async function doCreateOrder(items) {
   } finally {
     loading.checkout = false;
     qs("#btnCheckout").disabled = false;
+    submitToken = null; // ★成功でも失敗でもリセット（次の注文は新token）
   }
 }
 
@@ -635,18 +641,25 @@ qs("#btnLoadLast").addEventListener("click", async () => {
     return;
   }
 
+(async function init(){
+  if (!GAS_WEB_APP_URL || !GAS_WEB_APP_URL.includes("script.google.com")) {
+    setMsg("err", "GAS_WEB_APP_URL が未設定です。");
+    qs("#productsLoading").style.display = "none";
+    return;
+  }
+
   await loadProducts();
-  // ★URLパラメータから注文IDを受け取る
-const sp = new URLSearchParams(location.search);
-const oidFromUrl = (sp.get("order_id") || "").trim();
-if (oidFromUrl) {
-  qs("#orderIdInput").value = oidFromUrl;
-  setView("my");
-  await loadMyOrder(oidFromUrl);
-}
   updateTotals();
+
+  // ★URLパラメータから注文IDを受け取る（あれば②を開いて表示）
+  const sp = new URLSearchParams(location.search);
+  const oidFromUrl = (sp.get("order_id") || "").trim();
+  if (oidFromUrl) {
+    qs("#orderIdInput").value = oidFromUrl;
+    setView("my");
+    await loadMyOrder(oidFromUrl);
+  }
 
   const last = localStorage.getItem(LS_LAST_ORDER_ID) || "";
   qs("#btnLoadLast").style.display = last ? "" : "none";
 })();
-
