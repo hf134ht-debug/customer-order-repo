@@ -17,6 +17,25 @@ const escapeHtml = (s) =>
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
   }[c]));
 
+function fmtOrderTime(s){
+  if (!s) return "";
+  // ISOっぽいなら Date にして、秒を捨てて表示
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const day = String(d.getDate()).padStart(2,"0");
+    const hh = String(d.getHours()).padStart(2,"0");
+    const mm = String(d.getMinutes()).padStart(2,"0");
+    // 例: 2025-12-13 18:59
+    return `${y}-${m}-${day} ${hh}:${mm}`;
+  }
+  // Dateにできない形式は、とりあえず秒だけ削る（…:ss か .sss を落とす）
+  return String(s)
+    .replace(/\.\d+Z?$/,"")
+    .replace(/:\d{2}(?=$|Z)/,"");
+}
+
 /* ===== 内訳HTML（1箇所に統一） ===== */
 function buildLinesHtml(items) {
   const arr = Array.isArray(items) ? items : [];
@@ -232,7 +251,7 @@ function renderCard(o, compact, isRankMode, index) {
     <div class="row">
       <div>
         <div class="name">No.${Number(o.display_no || 0)}</div>
-        <div class="muted">経過 ${Number(o.elapsed_min || 0)} 分 / ${escapeHtml(o.created_at || "")}</div>
+        <div class="muted">経過 ${Number(o.elapsed_min || 0)} 分 / ${escapeHtml(fmtOrderTime(o.created_at))}</div>
         ${lockNote}
       </div>
       <div style="display:flex; gap:10px; align-items:center;">
@@ -651,3 +670,4 @@ function bindEventsOnce() {
   initShopToggle_();
   refresh({ silent: false });
 })();
+
