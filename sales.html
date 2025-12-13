@@ -103,6 +103,17 @@
   </script>
 
   <!-- ui.js も統一CSS前提なら残す（キャッシュバスター） -->
-  <script src="./ui.js?v=20251214-1"></script>
+  <!-- ✅ sales.js のパスだけ正しい方にする -->
+<script src="./sales.js?v=20251214-1"></script>
+<!-- もし js フォルダなら ↑を ./js/sales.js に -->
+
+<script>
+  console.log("[sales] html loaded", new Date().toISOString());
+</script>
+
+<!-- ❌ ui.js は一旦外す（構文エラーで全停止するため） -->
+<!-- <script src="./ui.js?v=20251214-1"></script> -->
+
 </body>
 </html>
+
