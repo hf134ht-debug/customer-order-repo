@@ -126,43 +126,37 @@ function setView(which) {
 const uiState = {
   query: "",
   hideSoldOut: false,
-  density: 3, // 3=標準 / 6=コンパクト
+  density: 3, // 3=標準(1列) / 6=コンパクト(2列)
 };
+
+function normalize_(s){ return String(s || "").trim().toLowerCase(); }
+
+function isCompact_(){
+  // densitySel が 3 / 6 の想定
+  return Number(uiState.density || 3) >= 6;
+}
 
 function applyDensity_() {
   const grid = qs("#productList");
   if (!grid) return;
 
-  const mode = Number(uiState.density || 3);
-
   grid.style.display = "grid";
-
-  // 6 = コンパクト（2列）
-  if (mode === 6) {
+  if (isCompact_()) {
     grid.style.gridTemplateColumns = "repeat(2, minmax(0, 1fr))";
     grid.style.gap = "10px";
-    grid.classList.add("dense");
     document.body.classList.add("isDense");
   } else {
-    // 3 = 標準（1列）
     grid.style.gridTemplateColumns = "minmax(0, 1fr)";
     grid.style.gap = "12px";
-    grid.classList.remove("dense");
     document.body.classList.remove("isDense");
   }
 }
 
-function normalize_(s){
-  return String(s || "").trim().toLowerCase();
-}
-
 function filterProducts_(list){
-  let arr = Array.isArray(list) ? list.slice() : [];
+  let arr = Array.isArray(list) ? list : [];
   const q = normalize_(uiState.query);
 
-  if (uiState.hideSoldOut) {
-    arr = arr.filter(p => !p.is_sold_out);
-  }
+  if (uiState.hideSoldOut) arr = arr.filter(p => !p.is_sold_out);
   if (q) {
     arr = arr.filter(p => {
       const hay = `${p.name || ""} ${p.product_id || ""}`.toLowerCase();
@@ -176,68 +170,128 @@ function bindPosControlsOnce_(){
   if (window.__posControlsBound) return;
   window.__posControlsBound = true;
 
-  const search = document.getElementById("searchInput");
-  const density = document.getElementById("densitySel");
-  const hide = document.getElementById("hideSoldOut");
+  const search  = qs("#searchInput");
+  const density = qs("#densitySel");
+  const hide    = qs("#hideSoldOut");
+
+  // 入力が重くならないように軽いデバウンス
+  let t = null;
+  const rerenderSoon = () => {
+    clearTimeout(t);
+    t = setTimeout(() => renderProductList(), 50);
+  };
 
   if (search) {
     search.addEventListener("input", () => {
       uiState.query = search.value || "";
-      renderProductList(); // ★再描画
+      rerenderSoon();
     });
   }
-
   if (density) {
     density.addEventListener("change", () => {
       uiState.density = Number(density.value || 3);
       applyDensity_();
-      renderProductList(); // ★再描画（見た目の詰め具合が変わる想定）
+      renderProductList();
     });
   }
-
   if (hide) {
     hide.addEventListener("change", () => {
       uiState.hideSoldOut = !!hide.checked;
-      renderProductList(); // ★再描画
+      renderProductList();
     });
   }
 
-  // 初期反映
   applyDensity_();
+  bindProductListEventsOnce_(); // ★重要：イベントを1回だけ付ける
 }
 
-// ---------- modal ----------
-function openModal({ title, bodyHtml, actions }) {
-  qs("#modalTitle").textContent = title || "確認";
-  qs("#modalBody").innerHTML = bodyHtml || "";
-  const area = qs("#modalActions");
-  area.innerHTML = "";
-  (actions || []).forEach(a => {
-    const b = document.createElement("button");
-    b.className = a.className || "btn";
-    b.textContent = a.label;
-    b.onclick = () => a.onClick && a.onClick();
-    area.appendChild(b);
-  });
-  qs("#overlay").classList.add("show");
-}
-function closeModal() { qs("#overlay").classList.remove("show"); }
-qs("#overlay").addEventListener("click", (e) => { if (e.target.id === "overlay") closeModal(); });
+// ===== 高速化：商品リストのイベントは“1回だけ”付ける（デリゲーション）=====
+function bindProductListEventsOnce_(){
+  if (window.__productListBound) return;
+  window.__productListBound = true;
 
-// ---------- API ----------
-async function apiGet(params) {
-  const url = new URL(GAS_WEB_APP_URL);
-  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
-  const res = await fetch(url.toString(), { method:"GET" });
-  return await res.json();
-}
-async function apiPost(payload) {
-  const res = await fetch(GAS_WEB_APP_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify(payload),
+  const list = qs("#productList");
+  if (!list) return;
+
+  list.addEventListener("click", async (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+
+    const card = btn.closest(".itemCard");
+    if (!card) return;
+
+    const pid = card.dataset.pid;
+    if (!pid) return;
+
+    // 売切は何もしない（見た目は出すが操作不可）
+    const p = products.find(x => x.product_id === pid);
+    if (p && p.is_sold_out) return;
+
+    const act = btn.dataset.act;
+
+    // +/- 処理
+    if (act === "minus" || act === "plus") {
+      const input = card.querySelector(".qtyInput");
+      if (!input) return;
+
+      const cur = Number(input.value || 0);
+      const next = act === "minus" ? Math.max(0, cur - 1) : Math.max(0, cur + 1);
+
+      input.value = String(next);
+      qtyMap[pid] = next;
+      updateTotals();
+      return;
+    }
+
+    // 詳細トグル
+    if (act === "detail") {
+      const panel = card.querySelector(".detailPanel");
+      const chev = btn.querySelector(".chev");
+      if (!panel) return;
+
+      const open = panel.classList.contains("open");
+      if (open) {
+        panel.classList.remove("open");
+        panel.style.display = "none";
+        if (chev) chev.textContent = "▼";
+        return;
+      }
+
+      // コンパクト時：他の詳細を閉じる（ズレ事故防止）
+      if (isCompact_()) {
+        list.querySelectorAll(".detailPanel.open").forEach(pn => {
+          pn.classList.remove("open");
+          pn.style.display = "none";
+        });
+        list.querySelectorAll(".detailToggleBtn .chev").forEach(ch => (ch.textContent = "▼"));
+      }
+
+      panel.classList.add("open");
+      panel.style.display = "block";
+      if (chev) chev.textContent = "▲";
+
+      await ensureProductDetailLoaded(pid, panel);
+      return;
+    }
   });
-  return await res.json();
+
+  list.addEventListener("input", (e) => {
+    const input = e.target.closest("input.qtyInput");
+    if (!input) return;
+
+    const card = input.closest(".itemCard");
+    if (!card) return;
+
+    const pid = card.dataset.pid;
+    if (!pid) return;
+
+    const p = products.find(x => x.product_id === pid);
+    if (p && p.is_sold_out) return;
+
+    const v = Math.max(0, Number(input.value || 0));
+    qtyMap[pid] = v;
+    updateTotals();
+  });
 }
 
 // ---------- Products ----------
@@ -252,17 +306,18 @@ async function loadProducts() {
     if (!json.ok) throw new Error(json.error || "商品取得に失敗しました。");
     products = (json.products || []).filter(p => !!p.product_id);
 
+    // qtyMap 初期化
     if (!Object.keys(qtyMap || {}).length) {
       qtyMap = {};
-      products.forEach(p => qtyMap[p.product_id] = 0);
+      products.forEach(p => (qtyMap[p.product_id] = 0));
     } else {
       products.forEach(p => { if (qtyMap[p.product_id] == null) qtyMap[p.product_id] = 0; });
     }
 
     bindPosControlsOnce_();
-
     renderProductList();
     updateTotals();
+
     qs("#productsLoading").style.display = "none";
   } catch (err) {
     qs("#productsLoading").style.display = "none";
@@ -275,18 +330,19 @@ async function loadProducts() {
 function renderProductList() {
   const list = qs("#productList");
   if (!list) return;
+
+  applyDensity_();
   list.innerHTML = "";
 
-  // フィルタ
   const view = filterProducts_(products);
-
-  // 密度反映（標準=1列 / コンパクト=2列）
-  applyDensity_();
 
   if (!view.length) {
     list.innerHTML = `<div class="msg">該当する商品がありません</div>`;
     return;
   }
+
+  // 高速化：まとめてDOM投入
+  const frag = document.createDocumentFragment();
 
   view.forEach(p => {
     const sold = !!p.is_sold_out;
@@ -297,25 +353,28 @@ function renderProductList() {
 
     const currentQty = Number(qtyMap[p.product_id] || 0);
 
-    const soldBadge = sold
-      ? `<span class="pill on" style="margin-left:8px;">売切</span>`
+    // ✅ 売切だけ表示（販売中は出さない）
+    const soldBadge = sold ? `<span class="pill on" style="margin-left:8px;">売切</span>` : ``;
 
     el.innerHTML = `
       <div class="row">
-        <div>
-          <div class="name">${escapeHtml(p.name)} ${soldBadge}</div>
+        <div style="min-width:0;">
+          <div class="name" style="display:flex; align-items:center; gap:6px; min-width:0;">
+            <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(p.name)}</span>
+            ${soldBadge}
+          </div>
           <div class="muted">${escapeHtml(p.product_id)}</div>
         </div>
         <div class="price">${yen(p.price)}</div>
       </div>
 
-      <div class="row" style="margin-top:10px;">
-        <div class="qty">
-          <button class="btn btnGhost btnMinus" ${sold ? "disabled":""}>−</button>
+      <div class="row" style="margin-top:10px; gap:10px; align-items:center;">
+        <div class="qty" style="min-width:0;">
+          <button class="btn btnGhost btnMinus" data-act="minus" ${sold ? "disabled":""}>−</button>
           <input class="qtyInput" type="number" min="0" value="${currentQty}" ${sold ? "disabled":""}/>
-          <button class="btn btnGhost btnPlus" ${sold ? "disabled":""}>＋</button>
+          <button class="btn btnGhost btnPlus" data-act="plus" ${sold ? "disabled":""}>＋</button>
         </div>
-        <button class="btn detailToggleBtn" ${sold ? "disabled":""}>
+        <button class="btn detailToggleBtn" data-act="detail" ${sold ? "disabled":""}>
           詳細 <span class="chev">▼</span>
         </button>
       </div>
@@ -323,82 +382,16 @@ function renderProductList() {
       <div class="detailPanel" style="display:none;"></div>
     `;
 
-    if (sold) el.style.opacity = "0.6";
+    if (sold) el.style.opacity = "0.55";
 
-    const minus = el.querySelector(".btnMinus");
-    const plus  = el.querySelector(".btnPlus");
-    const input = el.querySelector(".qtyInput");
-    const btn   = el.querySelector(".detailToggleBtn");
-    const panel = el.querySelector(".detailPanel");
-
-    // 数量操作（売切は無効）
-    if (!sold) {
-      minus.addEventListener("click", () => {
-        const v = Math.max(0, Number(input.value||0) - 1);
-        input.value = v;
-        qtyMap[p.product_id] = v;
-        updateTotals();
-      });
-      plus.addEventListener("click", () => {
-        const v = Math.max(0, Number(input.value||0) + 1);
-        input.value = v;
-        qtyMap[p.product_id] = v;
-        updateTotals();
-      });
-      input.addEventListener("input", () => {
-        const v = Math.max(0, Number(input.value||0));
-        qtyMap[p.product_id] = v;
-        updateTotals();
-      });
-    }
-
-    // 詳細（コンパクト時は “開いたカードだけ全幅” + “他は閉じる”）
-    if (!sold) {
-      btn.addEventListener("click", async () => {
-        const isOpen = panel.classList.contains("open");
-        const isCompact = Number(uiState.density || 3) === 6;
-
-        // いったん閉じる
-        if (isOpen) {
-          panel.classList.remove("open");
-          panel.style.display = "none";
-          btn.querySelector(".chev").textContent = "▼";
-          el.classList.remove("detailOpen");
-          return;
-        }
-
-        // コンパクトなら他を閉じる（クリックの中でやる！）
-        if (isCompact) {
-          list.querySelectorAll(".detailPanel.open").forEach(pn => {
-            pn.classList.remove("open");
-            pn.style.display = "none";
-          });
-          list.querySelectorAll(".itemCard.detailOpen").forEach(card => {
-            card.classList.remove("detailOpen");
-          });
-          list.querySelectorAll(".detailToggleBtn .chev").forEach(ch => {
-            ch.textContent = "▼";
-          });
-        }
-
-        // 開く
-        panel.classList.add("open");
-        panel.style.display = "block";
-        btn.querySelector(".chev").textContent = "▲";
-
-        if (isCompact) el.classList.add("detailOpen");
-
-        await ensureProductDetailLoaded(p.product_id, panel);
-      });
-    }
-
-    // ★ここが重要：forEachの最後で必ず append する
-    list.appendChild(el);
+    frag.appendChild(el);
   });
+
+  list.appendChild(frag);
 }
 
+// ---------- Detail ----------
 async function ensureProductDetailLoaded(productId, panelEl) {
-  // キャッシュが有効なら表示
   const cached = detailCache[productId];
   if (cached && (String(cached.description || "").trim() || String(cached.image_url || "").trim() || String(cached.video_url || "").trim())) {
     renderDetailPanel(panelEl, cached);
@@ -412,8 +405,6 @@ async function ensureProductDetailLoaded(productId, panelEl) {
     if (!json.ok) throw new Error(json.error || "詳細取得に失敗しました。");
 
     const p = json.product;
-
-    // ★空ダミーをキャッシュしない（“説明はありません”固定化の原因を潰す）
     if (!p) {
       panelEl.innerHTML = `<div class="msg err">詳細が取得できませんでした（productが空）。</div>`;
       return;
@@ -861,6 +852,7 @@ qs("#btnLoadLast").addEventListener("click", async () => {
   const last = localStorage.getItem(LS_LAST_ORDER_ID) || "";
   qs("#btnLoadLast").style.display = last ? "" : "none";
 })();
+
 
 
 
