@@ -12,6 +12,7 @@ const qs = (s, el=document) => el.querySelector(s);
 const yen = (n) => "¥" + (Number(n||0)).toLocaleString("ja-JP");
 const escapeHtml = (s)=>String(s ?? "").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 
+/* ✅ 内訳行HTML（ここ1箇所だけ） */
 function buildLinesHtml(items) {
   const arr = Array.isArray(items) ? items : [];
   if (!arr.length) return `<li class="lineEmpty">（内訳なし）</li>`;
@@ -38,8 +39,9 @@ function buildLinesHtml(items) {
   }).join("");
 }
 
-
 const GAS_WEB_APP_URL = (window.GAS_WEB_APP_URL || "").trim();
+
+/* ✅ init は1回だけ */
 (async function init(){
   if (!GAS_WEB_APP_URL || !GAS_WEB_APP_URL.includes("script.google.com")) {
     setMsg("err", "GAS URL が未設定です。");
@@ -203,8 +205,8 @@ function renderCard(o, compact, isRankMode, index) {
   el.className = "card" + (compact ? " compact" : "");
   el.dataset.orderId = o.order_id;
 
-   const items = Array.isArray(o.items) ? o.items : [];
-   const lines = buildLinesHtml(items);
+  const items = Array.isArray(o.items) ? o.items : [];
+  const lines = buildLinesHtml(items);
 
   const lockNote = (String(o.lock_state||"") === "staff_edit")
     ? `<div class="muted"><span class="dangerText">編集中</span>（別端末の可能性）</div>`
@@ -216,31 +218,6 @@ function renderCard(o, compact, isRankMode, index) {
       <button class="rankBtn" data-act="down" ${index===ordersMain.length-1 ? "disabled":""}>↓</button>
     </div>
   ` : "";
-function buildLinesHtml(items) {
-  const arr = Array.isArray(items) ? items : [];
-  if (!arr.length) return `<li class="lineEmpty">（内訳なし）</li>`;
-
-  return arr.map(it => {
-    const name = escapeHtml(it.product_name_at_sale || it.product_name || it.name || it.product_id || "");
-    const qty = Number(it.qty || 0);
-    const unit = Number(it.unit_price || it.price || 0);
-    const lineTotal = Number(
-      it.line_total != null ? it.line_total :
-      it.subtotal != null ? it.subtotal :
-      (qty * unit)
-    );
-
-    return `
-      <li class="lineRow">
-        <span class="lineName">${name}</span>
-        <span class="lineMeta">
-          <span class="lineQty">× ${qty}</span>
-          <span class="lineSum">${yen(lineTotal)}</span>
-        </span>
-      </li>
-    `;
-  }).join("");
-}
 
   el.innerHTML = `
     <div class="row">
@@ -312,9 +289,10 @@ async function refresh({silent=false}={}) {
     if (!json.ok) throw new Error(json.error || "取得失敗");
 
     if (json.changed === false) {
-      // 差分なし：表示を維持（必要なら経過分だけ更新など拡張OK）
-      qs("#orderList").innerHTML = "";
-      ordersMain.forEach((o, idx) => qs("#orderList").appendChild(renderCard(o, isCompact(), String(elSort.value)==="rank", idx)));
+      // 差分なし：表示を維持
+      const list = qs("#orderList");
+      list.innerHTML = "";
+      ordersMain.forEach((o, idx) => list.appendChild(renderCard(o, isCompact(), String(elSort.value)==="rank", idx)));
       refreshLock = false;
       return;
     }
@@ -543,11 +521,8 @@ async function saveDraft() {
 }
 
 function removeOrderLocally(order_id) {
-  // state から消す
   ordersMain = ordersMain.filter(o => o.order_id !== order_id);
   ordersOther = ordersOther.filter(o => o.order_id !== order_id);
-
-  // UIを即反映（ネットワーク待ちなし）
   renderAll();
 }
 
@@ -556,14 +531,11 @@ async function completeOrder(order_id) {
   try {
     const json = await apiPost({ mode:"staffMarkHanded", order_id, actor:"staff" });
     if (!json.ok) throw new Error(json.error || "失敗");
-    // ✅ ここで即消す
     removeOrderLocally(order_id);
-    // モーダル開いてたら閉じる（対象が同じなら）
     if (editingOrder && editingOrder.order_id === order_id) {
       await unlockEditingOrder();
       closeEditor();
     }
-    // 整合性確認（任意。残してOK）
     refresh({ silent:true });
   } catch (err) {
     setMsg("err", `完了できませんでした。\n詳細: ${String(err.message||err)}`);
@@ -575,7 +547,6 @@ async function cancelOrder(order_id) {
   try {
     const json = await apiPost({ mode:"cancelOrder", order_id, actor:"staff" });
     if (!json.ok) throw new Error(json.error || "失敗");
-    // ✅ 即消す
     removeOrderLocally(order_id);
     if (editingOrder && editingOrder.order_id === order_id) {
       await unlockEditingOrder();
@@ -596,7 +567,6 @@ async function moveRank(index, delta) {
   const target = index + delta;
   if (target < 0 || target >= ordersMain.length) return;
 
-  // 現在の並び（mainのみ）をswapして保存
   const ids = ordersMain.map(o => o.order_id);
   const tmp = ids[index]; ids[index] = ids[target]; ids[target] = tmp;
 
@@ -609,15 +579,7 @@ async function moveRank(index, delta) {
   }
 }
 
-/* ===== init ===== */
-(async function init(){
-  if (!GAS_WEB_APP_URL.includes("script.google.com")) {
-    setMsg("err", "GAS_WEB_APP_URL が未設定です。");
-    return;
-  }
-  await refresh({ silent:false });
-})();
-
+/* ===== shop toggle（既存のまま） ===== */
 async function apiGet_(params){
   const url = new URL(GAS_WEB_APP_URL);
   Object.keys(params).forEach(k=>url.searchParams.set(k, params[k]));
@@ -650,7 +612,6 @@ function renderShopState_(open){
     btn.textContent = "開店（受付再開）";
   }
 }
-
 async function initShopToggle_(){
   const s = await apiGet_({ mode:"getSettings" });
   if (s.ok) renderShopState_(!!s.settings.SHOP_OPEN);
@@ -662,15 +623,6 @@ async function initShopToggle_(){
     if (r.ok) renderShopState_(!!r.SHOP_OPEN);
   });
 }
-
-// 既存のDOMContentLoaded内で呼ぶ（無ければ追加）
 document.addEventListener("DOMContentLoaded", () => {
   initShopToggle_();
 });
-
-
-
-
-
-
-
