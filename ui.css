@@ -1340,4 +1340,41 @@ header{
   background: rgba(22,163,74,.95);
 }
 
+/* =========================================================
+   SALES calendar layout - force visible
+========================================================= */
+#calDow, #calGrid{
+  display:grid !important;
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+/* 曜日 */
+#calDow .dow{
+  text-align:center;
+  font-size:12px;
+  font-weight: 1000;
+  color: rgba(17,24,39,.70);
+}
+
+/* 日付マス：最低サイズを保証（潰れ防止） */
+#calGrid .day{
+  min-height: 52px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  position:relative !important;
+}
+
+/* dot が見えるように */
+#calGrid .dot{
+  position:absolute !important;
+  bottom:6px !important;
+  left:50% !important;
+  transform: translateX(-50%) !important;
+  width:8px !important;
+  height:8px !important;
+  border-radius:999px !important;
+}
+
 
