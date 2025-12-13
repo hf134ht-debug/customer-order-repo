@@ -32,38 +32,38 @@
   </div>
 
   <div class="wrap toolRow">
-    <div class="toolLeft">
-      <span class="pill" id="countPill">0件</span>
-    </div>
-
-    <div class="ctrls toolRight">
-      <select id="viewMode">
-        <option value="3">通常（3件）</option>
-        <option value="6">コンパクト（6件）</option>
-      </select>
-
-      <select id="sortMode">
-        <option value="created">受付順</option>
-        <option value="elapsed_desc">経過長い順</option>
-        <option value="rank">手動順</option>
-      </select>
-
-      <select id="filterMode">
-        <option value="">フィルタ：全て</option>
-      </select>
-
-      <button class="btn" id="btnRefresh">更新</button>
-
-      <select id="autoInterval">
-        <option value="10">自動 10秒</option>
-        <option value="30" selected>自動 30秒</option>
-        <option value="60">自動 60秒</option>
-      </select>
-
-      <!-- ✅ btnPrimary はCSS競合の元になりやすいのでやめて .btn に統一 -->
-      <button class="btn" id="btnAuto">自動更新：OFF</button>
-    </div>
+  <div class="toolLeft">
+    <span class="pill" id="countPill">0件</span>
+    <button class="btn" id="btnRefresh">更新</button>
   </div>
+
+  <div class="ctrls toolRight">
+    <select id="viewMode">
+      <option value="3">通常（3件）</option>
+      <option value="6">コンパクト（6件）</option>
+    </select>
+
+    <select id="sortMode">
+      <option value="created">受付順</option>
+      <option value="elapsed_desc">経過長い順</option>
+      <option value="rank">手動順</option>
+    </select>
+
+    <select id="filterMode">
+      <option value="">フィルタ：全て</option>
+    </select>
+
+    <!-- ★ここから btnRefresh を削除（重複しない） -->
+
+    <select id="autoInterval">
+      <option value="10">自動 10秒</option>
+      <option value="30" selected>自動 30秒</option>
+      <option value="60">自動 60秒</option>
+    </select>
+
+    <button class="btn btnPrimary" id="btnAuto">自動更新：OFF</button>
+  </div>
+</div>
 
   <div class="wrap">
     <div id="msgArea"></div>
@@ -137,3 +137,4 @@
 <script src="./ui.js?v=1"></script>
 </body>
 </html>
+
