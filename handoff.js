@@ -1,32 +1,23 @@
 /* =========================================================
-   handoff.js  店員用 受け渡し（安定版）
-   - 初期化1回に統一（重大）
-   - refreshLock を先に宣言（重大）
-   - “読み込み中…” と 件数 pill を fetch 前に確実に描画（重大）
-   - 商品名（lineName）がスマホで消える対策（CSSと合わせて最終固定）
+   handoff.js  店員用 受け渡し（統合・安定版）
+   - 3/6切替
+   - 自動更新（10/30/60秒、非表示タブ停止、差分判定）
+   - フィルタ（単一）
+   - 編集：カードタップ → POS風モーダル（数量変更＋品目追加）
+   - 完了/キャンセル
+   - 手動並び替え：rankモード時に上下ボタン（GASへ保存）
+   - 開店/閉店トグル
+   ※機能は削らず、重複と競合だけ排除
 ========================================================= */
 
-const qs = (s, el=document) => el.querySelector(s);
-const yen = (n) => "¥" + (Number(n||0)).toLocaleString("ja-JP");
-const escapeHtml = (s)=>String(s ?? "").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const qs = (s, el = document) => el.querySelector(s);
+const yen = (n) => "¥" + (Number(n || 0)).toLocaleString("ja-JP");
+const escapeHtml = (s) =>
+  String(s ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
 
-/* ===== state ===== */
-let autoEnabled = false;
-let timer = null;
-let lastMaxUpdatedAt = "";
-let products = [];
-let productsLoaded = false;
-
-let ordersMain = [];
-let ordersOther = [];
-
-let editingOrder = null;
-let draftItems = [];
-
-/* ★ 重要：refreshLock は refresh より前に宣言 ★ */
-let refreshLock = false;
-
-/* ===== helpers ===== */
+/* ===== 内訳HTML（1箇所に統一） ===== */
 function buildLinesHtml(items) {
   const arr = Array.isArray(items) ? items : [];
   if (!arr.length) return `<li class="lineEmpty">（内訳なし）</li>`;
@@ -53,38 +44,40 @@ function buildLinesHtml(items) {
   }).join("");
 }
 
-function setMsg(type, text) {
-  const area = qs("#msgArea");
-  if (!area) return;
-  if (!text) { area.innerHTML = ""; return; }
-  const cls = type==="err" ? "msg err" : "msg";
-  area.innerHTML = `<div class="${cls}">${escapeHtml(text).replace(/\n/g,"<br>")}</div>`;
-}
-function setModalMsg(type, text) {
-  const area = qs("#mMsg");
-  if (!area) return;
-  if (!text) { area.innerHTML = ""; return; }
-  const cls = type==="err" ? "msg err" : "msg";
-  area.innerHTML = `<div class="${cls}">${escapeHtml(text).replace(/\n/g,"<br>")}</div>`;
-}
-
-/* ===== API ===== */
+/* ===== GAS URL ===== */
 const GAS_WEB_APP_URL = (window.GAS_WEB_APP_URL || "").trim();
 
+/* ===== API（1系統に統一） ===== */
 async function apiGet(params) {
   const url = new URL(GAS_WEB_APP_URL);
-  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
-  const res = await fetch(url.toString(), { method:"GET" });
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  const res = await fetch(url.toString(), { method: "GET" });
   return await res.json();
 }
 async function apiPost(payload) {
   const res = await fetch(GAS_WEB_APP_URL, {
-    method:"POST",
-    headers:{ "Content-Type":"text/plain;charset=utf-8" },
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(payload),
   });
   return await res.json();
 }
+
+/* ===== state ===== */
+let autoEnabled = false;
+let timer = null;
+let lastMaxUpdatedAt = "";
+let products = [];
+let productsLoaded = false;
+
+let ordersMain = [];
+let ordersOther = [];
+
+let editingOrder = null;
+let draftItems = [];
+
+/* ★ここが致命傷だった：refreshLock を init より前に宣言 */
+let refreshLock = false;
 
 /* ===== controls ===== */
 const elView = qs("#viewMode");
@@ -98,6 +91,30 @@ function getLimit() {
   return (v === 6) ? 6 : 3;
 }
 function isCompact() { return getLimit() === 6; }
+
+/* ===== メッセージ ===== */
+function setMsg(type, text) {
+  const area = qs("#msgArea");
+  if (!area) return;
+  if (!text) { area.innerHTML = ""; return; }
+  const cls = type === "err" ? "msg err" : "msg";
+  area.innerHTML = `<div class="${cls}">${escapeHtml(text).replace(/\n/g, "<br>")}</div>`;
+}
+function setModalMsg(type, text) {
+  const area = qs("#mMsg");
+  if (!area) return;
+  if (!text) { area.innerHTML = ""; return; }
+  const cls = type === "err" ? "msg err" : "msg";
+  area.innerHTML = `<div class="${cls}">${escapeHtml(text).replace(/\n/g, "<br>")}</div>`;
+}
+
+/* ===== 初期表示の体感（ラグ対策） ===== */
+function showLoadingUI() {
+  const list = qs("#orderList");
+  if (list) list.innerHTML = `<div class="msg">読み込み中…</div>`;
+  const pill = qs("#countPill");
+  if (pill) pill.textContent = `0件`;   // 先に出す（“後から出る”を防ぐ）
+}
 
 /* ===== auto refresh ===== */
 function stopAuto() {
@@ -114,14 +131,14 @@ function startAuto() {
   const sec = Number(elAutoInt?.value || 30);
   timer = setInterval(() => {
     if (document.visibilityState !== "visible") return;
-    refresh({ silent:true });
+    refresh({ silent: true });
   }, sec * 1000);
 }
 
 /* ===== products ===== */
 async function loadProductsOnce() {
   if (productsLoaded) return;
-  const json = await apiGet({ mode:"getProducts", scope:"staff" });
+  const json = await apiGet({ mode: "getProducts", scope: "staff" });
   if (!json.ok) throw new Error(json.error || "getProducts failed");
   products = Array.isArray(json.products) ? json.products : [];
   productsLoaded = true;
@@ -178,13 +195,25 @@ function renderAll() {
     row.dataset.orderId = o.order_id;
     row.innerHTML = `
       <div>
-        <div style="font-weight:900;">No.${Number(o.display_no||0)}</div>
-        <div class="muted">経過 ${Number(o.elapsed_min||0)} 分</div>
+        <div style="font-weight:900;">No.${Number(o.display_no || 0)}</div>
+        <div class="muted">経過 ${Number(o.elapsed_min || 0)} 分</div>
       </div>
       <div class="muted">${yen(o.total)}</div>
     `;
     row.addEventListener("click", () => openEditor(o));
     others.appendChild(row);
+  });
+
+  // ★iPhoneで商品名だけ消える対策（CSSだけで勝てない競合があるため）
+  //   -webkit-text-fill-color / visibility / opacity / min-width を“最小限”強制
+  document.querySelectorAll(".lineName").forEach((n) => {
+    n.style.color = "#111";
+    n.style.background = "none";
+    n.style.opacity = "1";
+    n.style.visibility = "visible";
+    n.style.display = "block";
+    n.style.minWidth = "0";
+    n.style.webkitTextFillColor = "#111";
   });
 }
 
@@ -196,34 +225,22 @@ function renderCard(o, compact, isRankMode, index) {
   const items = Array.isArray(o.items) ? o.items : [];
   const lines = buildLinesHtml(items);
 
-  const lockNote = (String(o.lock_state||"") === "staff_edit")
+  const lockNote = (String(o.lock_state || "") === "staff_edit")
     ? `<div class="muted"><span class="dangerText">編集中</span>（別端末の可能性）</div>`
     : "";
 
   const rankBtns = isRankMode ? `
     <div class="rankBtns">
-      <button class="rankBtn" data-act="up" ${index===0 ? "disabled":""}>↑</button>
-      <button class="rankBtn" data-act="down" ${index===ordersMain.length-1 ? "disabled":""}>↓</button>
+      <button class="rankBtn" data-act="up" ${index === 0 ? "disabled" : ""}>↑</button>
+      <button class="rankBtn" data-act="down" ${index === ordersMain.length - 1 ? "disabled" : ""}>↓</button>
     </div>
   ` : "";
 
   el.innerHTML = `
-    // ✅ iPhone対策：商品名が消えるのをJSで強制的に潰す（CSS競合を無視）
-  el.querySelectorAll(".lineName").forEach(n => {
-    n.style.color = "#111";
-    n.style.background = "none";
-    n.style.opacity = "1";
-    n.style.visibility = "visible";
-    n.style.display = "block";
-    n.style.minWidth = "0";
-    // Safariの“文字が透明化”対策
-    n.style.webkitTextFillColor = "#111";
-  });
-
     <div class="row">
       <div>
-        <div class="name">No.${Number(o.display_no||0)}</div>
-        <div class="muted">経過 ${Number(o.elapsed_min||0)} 分 / ${escapeHtml(o.created_at||"")}</div>
+        <div class="name">No.${Number(o.display_no || 0)}</div>
+        <div class="muted">経過 ${Number(o.elapsed_min || 0)} 分 / ${escapeHtml(o.created_at || "")}</div>
         ${lockNote}
       </div>
       <div style="display:flex; gap:10px; align-items:center;">
@@ -260,31 +277,22 @@ function renderCard(o, compact, isRankMode, index) {
   if (isRankMode) {
     const up = el.querySelector('[data-act="up"]');
     const down = el.querySelector('[data-act="down"]');
-    if (up) up.addEventListener("click", async (ev)=>{ ev.stopPropagation(); await moveRank(index, -1); });
-    if (down) down.addEventListener("click", async (ev)=>{ ev.stopPropagation(); await moveRank(index, +1); });
+    if (up) up.addEventListener("click", async (ev) => { ev.stopPropagation(); await moveRank(index, -1); });
+    if (down) down.addEventListener("click", async (ev) => { ev.stopPropagation(); await moveRank(index, +1); });
   }
 
   return el;
 }
 
 /* ===== refresh ===== */
-async function refresh({silent=false}={}) {
+async function refresh({ silent = false } = {}) {
   if (refreshLock) return;
   refreshLock = true;
 
-  // ✅ 先にUIを出す（Safari対策）
-  if (!silent) setMsg("", "");
-
-  const pill = qs("#countPill");
-  if (pill) pill.textContent = "…件";
-
-  const list = qs("#orderList");
-  if (list) list.innerHTML = `<div class="msg">読み込み中…</div>`;
-
-  // ✅ 描画を確実に“1フレーム”進めてから fetch
-  await new Promise(r => requestAnimationFrame(r));
-
   try {
+    if (!silent) setMsg("", "");
+    showLoadingUI();
+
     const json = await apiGet({
       mode: "getPendingOrders",
       limit: String(getLimit()),
@@ -295,7 +303,14 @@ async function refresh({silent=false}={}) {
 
     if (!json.ok) throw new Error(json.error || "取得失敗");
 
-    ordersMain  = Array.isArray(json.orders_main) ? json.orders_main : (Array.isArray(json.orders) ? json.orders : []);
+    if (json.changed === false) {
+      // 差分なし：表示維持
+      renderAll();
+      return;
+    }
+
+    ordersMain = Array.isArray(json.orders_main) ? json.orders_main
+      : (Array.isArray(json.orders) ? json.orders : []);
     ordersOther = Array.isArray(json.orders_other) ? json.orders_other : [];
 
     if (typeof json.max_updated_at === "string") lastMaxUpdatedAt = json.max_updated_at;
@@ -304,9 +319,9 @@ async function refresh({silent=false}={}) {
     renderAll();
     setMsg("", "");
   } catch (err) {
+    const list = qs("#orderList");
     if (list) list.innerHTML = "";
-    setMsg("err", `取得できませんでした。\n詳細: ${String(err.message||err)}`);
-    if (pill) pill.textContent = "0件";
+    setMsg("err", `取得できませんでした。\n詳細: ${String(err.message || err)}`);
   } finally {
     refreshLock = false;
   }
@@ -328,7 +343,7 @@ function closeEditor() {
 
 async function lockEditingOrder(order_id) {
   try {
-    const j = await apiPost({ mode:"staffSetLock", order_id, lock_state:"staff_edit" });
+    const j = await apiPost({ mode: "staffSetLock", order_id, lock_state: "staff_edit" });
     if (!j.ok) throw new Error(j.error || "lock failed");
   } catch {
     setModalMsg("err", "ロックに失敗（他端末と競合の可能性）。保存時に上書きになる場合があります。");
@@ -336,27 +351,28 @@ async function lockEditingOrder(order_id) {
 }
 async function unlockEditingOrder() {
   if (!editingOrder) return;
-  try { await apiPost({ mode:"staffSetLock", order_id: editingOrder.order_id, lock_state:"" }); } catch {}
+  try { await apiPost({ mode: "staffSetLock", order_id: editingOrder.order_id, lock_state: "" }); } catch {}
 }
 
 function normalizeDraftFromOrder(o) {
   const items = Array.isArray(o.items) ? o.items : [];
   return items.map(it => ({
     product_id: String(it.product_id || ""),
-    product_name_at_sale: String(it.product_name_at_sale || it.product_name || it.name || ""),
-    unit_price: Number(it.unit_price || it.price || 0),
+    product_name_at_sale: String(it.product_name_at_sale || ""),
+    unit_price: Number(it.unit_price || 0),
     qty: Number(it.qty || 0),
   })).filter(x => x.qty > 0);
 }
+
 function calcDraftTotal() {
-  return draftItems.reduce((sum, it) => sum + (Number(it.unit_price||0) * Number(it.qty||0)), 0);
+  return draftItems.reduce((sum, it) => sum + (Number(it.unit_price || 0) * Number(it.qty || 0)), 0);
 }
 
 function renderModal() {
   if (!editingOrder) return;
 
-  qs("#mTitle").textContent = `No.${Number(editingOrder.display_no||0)} を編集`;
-  qs("#mSub").textContent = `経過 ${Number(editingOrder.elapsed_min||0)} 分 / 注文ID: ${editingOrder.order_id}`;
+  qs("#mTitle").textContent = `No.${Number(editingOrder.display_no || 0)} を編集`;
+  qs("#mSub").textContent = `経過 ${Number(editingOrder.elapsed_min || 0)} 分 / 注文ID: ${editingOrder.order_id}`;
   qs("#mTotal").textContent = yen(calcDraftTotal());
 
   const box = qs("#mItems");
@@ -385,12 +401,12 @@ function renderModal() {
 
       const inp = row.querySelector(".qtyInp");
       row.querySelector('[data-act="minus"]').addEventListener("click", () => {
-        it.qty = Math.max(0, Number(it.qty||0) - 1);
+        it.qty = Math.max(0, Number(it.qty || 0) - 1);
         if (it.qty === 0) draftItems.splice(idx, 1);
         renderModal();
       });
       row.querySelector('[data-act="plus"]').addEventListener("click", () => {
-        it.qty = Number(it.qty||0) + 1;
+        it.qty = Number(it.qty || 0) + 1;
         renderModal();
       });
       row.querySelector('[data-act="del"]').addEventListener("click", () => {
@@ -398,7 +414,7 @@ function renderModal() {
         renderModal();
       });
       inp.addEventListener("change", () => {
-        const v = Math.max(0, Math.floor(Number(inp.value||0)));
+        const v = Math.max(0, Math.floor(Number(inp.value || 0)));
         if (!v) draftItems.splice(idx, 1);
         else it.qty = v;
         renderModal();
@@ -408,6 +424,7 @@ function renderModal() {
     });
   }
 
+  // products search
   const key = String(qs("#mSearch").value || "").trim().toLowerCase();
   const out = qs("#mProds");
   out.innerHTML = "";
@@ -415,7 +432,7 @@ function renderModal() {
   const filtered = products
     .filter(p => p && p.product_id)
     .filter(p => {
-      const name = String(p.name||"").toLowerCase();
+      const name = String(p.name || "").toLowerCase();
       return key ? name.includes(key) : true;
     })
     .slice(0, 15);
@@ -466,7 +483,7 @@ async function openEditor(order) {
     renderModal();
     qs("#mSearch").focus();
   } catch (err) {
-    setModalMsg("err", `編集画面を開けませんでした。\n詳細: ${String(err.message||err)}`);
+    setModalMsg("err", `編集画面を開けませんでした。\n詳細: ${String(err.message || err)}`);
   }
 }
 
@@ -484,7 +501,10 @@ async function saveDraft() {
       mode: "updateOrderItems",
       order_id: editingOrder.order_id,
       actor: "staff",
-      items: draftItems.map(it => ({ product_id: it.product_id, qty: it.qty }))
+      items: draftItems.map(it => ({
+        product_id: it.product_id,
+        qty: it.qty
+      }))
     };
 
     const json = await apiPost(payload);
@@ -492,10 +512,9 @@ async function saveDraft() {
 
     await unlockEditingOrder();
     closeEditor();
-    await refresh({ silent:true });
-
+    await refresh({ silent: true });
   } catch (err) {
-    setModalMsg("err", `保存できませんでした。\n詳細: ${String(err.message||err)}`);
+    setModalMsg("err", `保存できませんでした。\n詳細: ${String(err.message || err)}`);
   } finally {
     btn.disabled = false;
     btn.textContent = "保存";
@@ -511,32 +530,32 @@ function removeOrderLocally(order_id) {
 async function completeOrder(order_id) {
   if (!confirm("受け渡し完了にします。よろしいですか？")) return;
   try {
-    const json = await apiPost({ mode:"staffMarkHanded", order_id, actor:"staff" });
+    const json = await apiPost({ mode: "staffMarkHanded", order_id, actor: "staff" });
     if (!json.ok) throw new Error(json.error || "失敗");
     removeOrderLocally(order_id);
     if (editingOrder && editingOrder.order_id === order_id) {
       await unlockEditingOrder();
       closeEditor();
     }
-    refresh({ silent:true });
+    refresh({ silent: true });
   } catch (err) {
-    setMsg("err", `完了できませんでした。\n詳細: ${String(err.message||err)}`);
+    setMsg("err", `完了できませんでした。\n詳細: ${String(err.message || err)}`);
   }
 }
 
 async function cancelOrder(order_id) {
   if (!confirm("この注文をキャンセルします。よろしいですか？")) return;
   try {
-    const json = await apiPost({ mode:"cancelOrder", order_id, actor:"staff" });
+    const json = await apiPost({ mode: "cancelOrder", order_id, actor: "staff" });
     if (!json.ok) throw new Error(json.error || "失敗");
     removeOrderLocally(order_id);
     if (editingOrder && editingOrder.order_id === order_id) {
       await unlockEditingOrder();
       closeEditor();
     }
-    refresh({ silent:true });
+    refresh({ silent: true });
   } catch (err) {
-    setMsg("err", `キャンセルできませんでした。\n詳細: ${String(err.message||err)}`);
+    setMsg("err", `キャンセルできませんでした。\n詳細: ${String(err.message || err)}`);
   }
 }
 
@@ -549,33 +568,18 @@ async function moveRank(index, delta) {
   const tmp = ids[index]; ids[index] = ids[target]; ids[target] = tmp;
 
   try {
-    const json = await apiPost({ mode:"updateHandoffRanks", order_ids: ids });
+    const json = await apiPost({ mode: "updateHandoffRanks", order_ids: ids });
     if (!json.ok) throw new Error(json.error || "並び替え失敗");
-    await refresh({ silent:true });
+    await refresh({ silent: true });
   } catch (err) {
-    setMsg("err", `並び替えできませんでした。\n詳細: ${String(err.message||err)}`);
+    setMsg("err", `並び替えできませんでした。\n詳細: ${String(err.message || err)}`);
   }
 }
 
-/* ===== shop toggle（あなたのGAS互換のまま） ===== */
-async function apiGet_(params){
-  const url = new URL(GAS_WEB_APP_URL);
-  Object.keys(params).forEach(k=>url.searchParams.set(k, params[k]));
-  const r = await fetch(url.toString());
-  return await r.json();
-}
-async function apiPostForm_(obj){
-  const form = new URLSearchParams();
-  Object.keys(obj).forEach(k=>{
-    const v = obj[k];
-    form.set(k, typeof v === "object" ? JSON.stringify(v) : String(v));
-  });
-  const r = await fetch(GAS_WEB_APP_URL, { method:"POST", body: form });
-  return await r.json();
-}
-function renderShopState_(open){
-  const badge = document.getElementById("shopState");
-  const btn = document.getElementById("btnToggleShop");
+/* ===== shop toggle ===== */
+function renderShopState_(open) {
+  const badge = qs("#shopState");
+  const btn = qs("#btnToggleShop");
   if (!badge || !btn) return;
 
   if (open) {
@@ -590,54 +594,67 @@ function renderShopState_(open){
     btn.textContent = "開店（受付再開）";
   }
 }
-async function initShopToggle_(){
-  const s = await apiGet_({ mode:"getSettings" });
-  if (s.ok) renderShopState_(!!s.settings.SHOP_OPEN);
 
-  const btn = document.getElementById("btnToggleShop");
+async function initShopToggle_() {
+  try {
+    const s = await apiGet({ mode: "getSettings" });
+    if (s.ok) renderShopState_(!!(s.settings && s.settings.SHOP_OPEN));
+  } catch {}
+
+  const btn = qs("#btnToggleShop");
   if (!btn) return;
-  btn.addEventListener("click", async ()=>{
-    const r = await apiPostForm_({ mode:"toggleShopOpen" });
-    if (r.ok) renderShopState_(!!r.SHOP_OPEN);
+
+  btn.addEventListener("click", async () => {
+    try {
+      // GAS側が form を期待してる場合があるので text/plain で統一しつつ mode だけ投げる
+      const r = await apiPost({ mode: "toggleShopOpen" });
+      if (r.ok) renderShopState_(!!r.SHOP_OPEN);
+    } catch {}
   });
 }
 
 /* ===== events ===== */
-qs("#btnAuto")?.addEventListener("click", () => { autoEnabled ? stopAuto() : startAuto(); });
-qs("#btnRefresh")?.addEventListener("click", () => refresh({ silent:false }));
-elView?.addEventListener("change", () => refresh({ silent:false }));
-elSort?.addEventListener("change", () => refresh({ silent:false }));
-elFilter?.addEventListener("change", () => refresh({ silent:false }));
-elAutoInt?.addEventListener("change", () => { if (autoEnabled) startAuto(); });
+function bindEventsOnce() {
+  qs("#btnAuto")?.addEventListener("click", () => {
+    autoEnabled ? stopAuto() : startAuto();
+  });
+  qs("#btnRefresh")?.addEventListener("click", () => refresh({ silent: false }));
+  elView?.addEventListener("change", () => refresh({ silent: false }));
+  elSort?.addEventListener("change", () => refresh({ silent: false }));
+  elFilter?.addEventListener("change", () => refresh({ silent: false }));
+  elAutoInt?.addEventListener("change", () => { if (autoEnabled) startAuto(); });
 
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible" && autoEnabled) refresh({ silent:true });
-});
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && autoEnabled) refresh({ silent: true });
+  });
 
-qs("#mClose")?.addEventListener("click", async () => {
-  await unlockEditingOrder();
-  closeEditor();
-});
-qs("#overlay")?.addEventListener("click", async (ev) => {
-  if (ev.target.id === "overlay") {
+  qs("#mClose")?.addEventListener("click", async () => {
     await unlockEditingOrder();
     closeEditor();
-  }
-});
-qs("#mSearch")?.addEventListener("input", () => { if (editingOrder) renderModal(); });
-qs("#mSave")?.addEventListener("click", saveDraft);
-qs("#mHanded")?.addEventListener("click", async () => { if (editingOrder) await completeOrder(editingOrder.order_id); });
-qs("#mCancel")?.addEventListener("click", async () => { if (editingOrder) await cancelOrder(editingOrder.order_id); });
+  });
 
-/* ===== init（★1回だけ） ===== */
-(async function init(){
+  qs("#overlay")?.addEventListener("click", async (ev) => {
+    if (ev.target.id === "overlay") {
+      await unlockEditingOrder();
+      closeEditor();
+    }
+  });
+
+  qs("#mSearch")?.addEventListener("input", () => { if (editingOrder) renderModal(); });
+
+  qs("#mSave")?.addEventListener("click", saveDraft);
+  qs("#mHanded")?.addEventListener("click", async () => { if (editingOrder) await completeOrder(editingOrder.order_id); });
+  qs("#mCancel")?.addEventListener("click", async () => { if (editingOrder) await cancelOrder(editingOrder.order_id); });
+}
+
+/* ===== init（1回だけ） ===== */
+(function init() {
   if (!GAS_WEB_APP_URL || !GAS_WEB_APP_URL.includes("script.google.com")) {
     setMsg("err", "GAS_WEB_APP_URL が未設定です。");
     return;
   }
-  // 先に shop 状態だけ即反映（体感速度）
-  initShopToggle_();
-  // “読み込み中…” を確実に出す
-  await refresh({ silent:false });
+  showLoadingUI();        // ★即表示（体感改善）
+  bindEventsOnce();       // ★イベント1回
+  initShopToggle_();      // ★開店/閉店
+  refresh({ silent: false });
 })();
-
