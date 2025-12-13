@@ -1377,4 +1377,46 @@ header{
   border-radius:999px !important;
 }
 
+/* =========================
+   売り切れ表示（customer）
+========================= */
+
+/* カード全体 */
+.itemCard.soldout{
+  opacity: 0.55;
+  filter: grayscale(0.25);
+  background: #f1f1f1;
+  position: relative;
+}
+
+/* 商品名 */
+.itemCard.soldout .name{
+  text-decoration: line-through;
+  color: #6b7280;
+}
+
+/* 価格も少し弱く */
+.itemCard.soldout .price{
+  color: #6b7280;
+}
+
+/* 数量・詳細は操作不可に見せる */
+.itemCard.soldout button,
+.itemCard.soldout input{
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+/* 売切バッジ */
+.soldBadge{
+  display:inline-block;
+  margin-left:8px;
+  padding:4px 10px;
+  font-size:12px;
+  font-weight:900;
+  border-radius:999px;
+  background:#111827;   /* ← owner 側と合わせた黒 */
+  color:#fff;
+}
+
 
