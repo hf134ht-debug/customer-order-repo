@@ -189,9 +189,7 @@ async function loadOpsSettings_(){
   renderOwnerShopState_(!!s.settings.SHOP_OPEN);
 
   const autoMin = document.getElementById("autoMin");
-  const staffLimit = document.getElementById("staffLimit");
   if(autoMin) autoMin.value = String(s.settings.AUTO_HANDOFF_MIN || 60);
-  if(staffLimit) staffLimit.value = String(s.settings.STAFF_LIST_LIMIT || 6);
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -229,6 +227,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("btnResetSoldOut").addEventListener("click", resetSoldOutAll);
   load();
 });
+
 
 
 
