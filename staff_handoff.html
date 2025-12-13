@@ -5,106 +5,30 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>SERVE STATION</title>
 
-  <!-- ✅ 読み込み順を固定（誤作動防止） -->
-  <link rel="stylesheet" href="./ui_theme.css?v=20251213_1">
+  <!-- ベース（既存） -->
+  <link rel="stylesheet" href="./ui_dark.css?v=2">
 
+  <!-- 共通テーマ（既存） -->
+  <link rel="stylesheet" href="./ui_theme.css?v=1">
+
+  <!-- ★最小上書き：機能は触らず、あなたの理想の配置と視認性だけ確定 -->
   <style>
-    :root{ --bg:#f7f7fb; --card:#fff; --line:#e8e8ef; --text:#111; --muted:#666; --danger:#c0392b; --ok:#1e824c; --shadow:0 10px 30px rgba(0,0,0,.06); }
-    body{ margin:0; font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif; background:var(--bg); color:var(--text); }
-    header{ position:sticky; top:0; z-index:10; background:rgba(247,247,251,.92); backdrop-filter: blur(10px); border-bottom:1px solid var(--line); }
-    .wrap{ max-width: 980px; margin:0 auto; padding: 10px 12px 30px; }
-    .topbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding: 10px 0; flex-wrap:wrap; }
-    .title{ font-weight: 900; font-size: 18px; }
-    .pill{ padding: 4px 8px; border-radius: 999px; border:1px solid var(--line); background:#fff; font-weight:900; }
-    .btn{ border:1px solid var(--line); background:var(--card); padding: 10px 12px; border-radius: 12px; font-weight:900; cursor:pointer; }
-    .btnPrimary{ background:#111; color:#fff; border-color:#111; }
-    .btnDanger{ background:var(--danger); color:#fff; border-color:var(--danger); }
-    .btnOk{ background:var(--ok); color:#fff; border-color:var(--ok); }
-    .btn:disabled{ opacity:.6; cursor:not-allowed; }
-    .muted{ color:var(--muted); font-size: 12px; }
-    .msg{ margin: 10px 0; padding: 10px 12px; border-radius: 12px; border:1px solid var(--line); background: var(--card); }
-    .msg.err{ border-color:#f0c0c0; background:#fff5f5; color:var(--danger); }
-    .grid{ display:flex; flex-direction:column; gap:10px; }
-    .card{ background:var(--card); border:1px solid var(--line); border-radius: 16px; padding: 12px; box-shadow: var(--shadow); }
-    .card.compact .name{ font-size: 14px; }
-    .row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
-    .name{ font-weight: 900; font-size: 16px; }
-    .price{ font-weight: 900; }
-    .divider{ height:1px; background:var(--line); margin: 12px 0; }
-    .list{ margin: 8px 0; padding-left: 18px; }
-    .actions{ display:flex; gap:10px; justify-content:flex-end; margin-top: 10px; flex-wrap: wrap; }
-    .ctrls{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    select, input[type="search"]{ border:1px solid var(--line); background:#fff; padding:10px 10px; border-radius:12px; font-weight:800; }
-    .sectionTitle{ font-weight:900; margin: 14px 0 8px; }
-    details{ border:1px solid var(--line); background:#fff; border-radius:16px; padding:10px 12px; }
-    summary{ cursor:pointer; font-weight:900; }
-    .otherRow{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-top:1px dashed var(--line); cursor:pointer; }
-    .otherRow:first-of-type{ border-top:none; }
-    .dangerText{ color:var(--danger); font-weight:900; }
-
-    /* rank buttons */
-    .rankBtns{ display:flex; gap:6px; }
-    .rankBtn{ border:1px solid var(--line); background:#fff; border-radius:12px; padding:8px 10px; font-weight:900; cursor:pointer; }
-    .rankBtn:disabled{ opacity:.45; cursor:not-allowed; }
-
-    /* modal */
-    .overlay{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; z-index:50; }
-    .overlay.show{ display:block; }
-    .modal{ position:fixed; inset:auto 0 0 0; background:#fff; border-radius: 18px 18px 0 0; border-top:1px solid var(--line); box-shadow: var(--shadow); max-height: 86vh; overflow:auto; padding: 12px; }
-    .modalHead{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
-    .modalTitle{ font-weight:900; font-size:18px; }
-    .mini{ font-size:12px; color:var(--muted); }
-    .itemRow{ display:grid; grid-template-columns: 1fr auto auto; gap:8px; align-items:center; padding:10px 0; border-top:1px solid var(--line); }
-    .itemRow:first-child{ border-top:none; }
-    .qtyBox{ display:flex; align-items:center; gap:6px; }
-    .qtyBtn{ width:38px; height:38px; border-radius:12px; border:1px solid var(--line); background:#fff; font-weight:900; cursor:pointer; }
-    .qtyInp{ width:64px; text-align:center; border:1px solid var(--line); border-radius:12px; padding:10px 6px; font-weight:900; }
-    .right{ text-align:right; }
-    .searchBox{ display:flex; gap:8px; align-items:center; }
-    .prodList{ display:flex; flex-direction:column; gap:8px; margin-top:10px; }
-    .prodBtn{ display:flex; justify-content:space-between; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:14px; background:#fff; cursor:pointer; font-weight:900; }
-    .prodBtn:disabled{ opacity:.5; cursor:not-allowed; }
-    .stickyFoot{ position:sticky; bottom:0; background:#fff; padding:10px 0 0; border-top:1px solid var(--line); }
-
-    /* ==== FIX: header controls should be horizontal ==== */
-
-    /* 上部（タイトル + コントロール群）は横並び固定 */
-    .wrap .topbar{
-      flex-wrap: nowrap;               /* ★横固定 */
-      align-items: flex-start;
+    /* ① 文字の太さを戻す（以前の“太い”感じ） */
+    .name, .price, .navItem, .pill, .btn, .lineName, .lineQty, .lineSum {
+      font-weight: 1000 !important;
     }
 
-    /* 右側コントロールを右寄せ、1行に保つ */
-    .ctrls{
-      flex: 1;
-      justify-content: flex-end;
-      flex-wrap: nowrap;               /* ★折り返さない */
-      overflow-x: auto;                /* 画面が狭い時は横スクロール */
-      white-space: nowrap;
-      gap: 10px;
-      padding-bottom: 4px;             /* スクロールバーの逃げ */
+    /* ② スマホのヘッダーが見にくい問題：背景と余白を安定させる（以前に近い視認性） */
+    header.appHeader{
+      background: #51565f !important; /* ui_theme の --hdr-bg と同等 */
+      border-bottom: 1px solid rgba(255,255,255,.18) !important;
+    }
+    .brandTitle{
+      font-size: 28px !important;
+      letter-spacing: 1.2px !important;
     }
 
-    /* ★最重要：ui_dark.css の width:100% を潰す */
-    .ctrls select,
-    .ctrls button,
-    .ctrls .pill{
-      width: auto !important;          /* ★これで縦積みが消える */
-      flex: 0 0 auto;
-    }
-
-    /* pillが縮まないように */
-    #countPill{ min-width: 4.5em; text-align:center; }
-
-    /* 狭い時はタイトル側も少しだけ詰める */
-    @media (max-width: 680px){
-      .wrap .topbar{ flex-wrap: wrap; }          /* タイトルは折り返してOK */
-      .ctrls{ width:100%; justify-content:flex-start; }
-    }
-
-    /* ※あなたの元の大量テーマCSSはそのまま保持（ここでは削除しない） */
-
-    /* ===== 最終FIX（最小）：内訳を2枚目の配置に固定 ===== */
+    /* ③ 内訳：あなたの理想（左=商品名 / 右=×数量 + 小計）を全幅で固定 */
     .card .list .lineRow{
       display:flex !important;
       align-items:center !important;
@@ -112,28 +36,60 @@
       flex-wrap:nowrap !important;
       gap:12px !important;
     }
-
     .card .list .lineName{
-      flex:1 1 auto !important;
-      min-width:0 !important;
-      text-align:left !important;   /* ★左詰め固定 */
-      white-space:nowrap !important;
-      overflow:hidden !important;
-      text-overflow:ellipsis !important;
-    }
+      flex: 1 1 auto !important;
+      min-width: 0 !important;
+      text-align:left !important;
 
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+
+      /* ★iPhone Safari で“文字だけ消える”事故を確実に殺す */
+      color: #111 !important;
+      -webkit-text-fill-color: #111 !important;
+      background: none !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
     .card .list .lineMeta{
-      flex:0 0 auto !important;
+      flex: 0 0 auto !important;
       display:flex !important;
       align-items:baseline !important;
-      justify-content:flex-end !important; /* ★右側固定 */
-      gap:12px !important;
-      white-space:nowrap !important;
+      justify-content:flex-end !important;
+      gap: 12px !important;
+      white-space: nowrap !important;
       text-align:right !important;
     }
-  </style>
+    .card .list .lineQty{
+      color: rgba(15,23,42,.70) !important;
+    }
+    .card .list .lineSum{
+      color: rgba(15,23,42,.86) !important;
+      background: none !important;
+      -webkit-text-fill-color: rgba(15,23,42,.86) !important;
+    }
 
+    /* ④ 体感速度：読み込み中メッセージが見えるように最低高さを確保（ラグに見えない） */
+    #orderList{ min-height: 120px; }
+
+    /* ⑤ スマホでコントロールが縦に崩れる事故を防ぐ（左詰め／必要なら横スクロール） */
+    .toolRow{ flex-wrap:wrap; }
+    .toolRight{
+      width:100%;
+      justify-content:flex-start !important;
+      overflow-x:auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .toolRight select,
+    .toolRight button,
+    .toolLeft .pill{
+      width:auto !important;
+      flex: 0 0 auto;
+    }
+  </style>
 </head>
+
 <body>
 <header class="appHeader">
   <div class="wrap headRow">
@@ -256,188 +212,5 @@
 
 <script src="./handoff.js"></script>
 <script src="./ui.js?v=1"></script>
-<link rel="stylesheet" href="./ui_theme.css?v=2">
-<style>
-/* === HOTFIX: 内訳は常に「左=商品名 / 右=×数量 + 小計」固定（スマホ含む） === */
-.card .list .lineRow{
-  display:flex !important;
-  align-items:center !important;
-  justify-content:space-between !important;
-  flex-direction:row !important;
-  flex-wrap:nowrap !important;
-}
-.card .list .lineName{
-  flex:1 1 auto !important;
-  min-width:0 !important;
-  text-align:left !important;
-  white-space:nowrap !important;
-  overflow:hidden !important;
-  text-overflow:ellipsis !important;
-}
-.card .list .lineMeta{
-  flex:0 0 auto !important;
-  display:flex !important;
-  justify-content:flex-end !important;
-  align-items:baseline !important;
-  gap:12px !important;
-  white-space:nowrap !important;
-  text-align:right !important;
-}
-@media (max-width:520px){
-  .card .list .lineRow{ display:flex !important; } /* ui_theme の grid を潰す */
-}
-</style>
-<style>
-/* =========================
-   HOTFIX v1 (staff_handoff)
-   - スマホ内訳が消える問題
-   - 太字が戻る問題
-   - ヘッダー見にくい/縦崩れを以前の見た目に寄せる
-========================= */
-
-/* ---- typography（太字を戻す） ---- */
-.name, .price,
-.card b,
-.card .list .lineName,
-.card .list .lineQty,
-.card .list .lineSum,
-.navItem,
-.badge-open, .badge-close,
-#btnToggleShop,
-.btn{
-  font-weight: 1000 !important;
-}
-
-/* ---- items（スマホで商品名が消えるのを殺す） ---- */
-.card .list .lineRow{
-  display:flex !important;
-  align-items:center !important;
-  justify-content:space-between !important;
-  flex-direction:row !important;
-  flex-wrap:nowrap !important;
-}
-.card .list .lineName{
-  flex: 1 1 auto !important;
-  min-width: 0 !important;
-  color:#111 !important;                 /* ← “見えない”対策（最重要） */
-  text-align:left !important;
-  white-space:nowrap !important;
-  overflow:hidden !important;
-  text-overflow:ellipsis !important;
-}
-.card .list .lineMeta{
-  flex: 0 0 auto !important;
-  display:flex !important;
-  align-items:baseline !important;
-  justify-content:flex-end !important;
-  gap: 12px !important;
-  white-space:nowrap !important;
-}
-.card .list .lineQty,
-.card .list .lineSum{
-  color:#111 !important;
-}
-
-/* ---- header（スマホで縦に崩れるのを防ぐ / 見やすくする） ---- */
-header.appHeader{
-  background: #51565f !important; /* 以前の見た目寄せ：渋いグレー */
-  border-bottom: 1px solid rgba(255,255,255,.20) !important;
-}
-.headRow{
-  flex-wrap:wrap !important;          /* 2段構成OK */
-  align-items:center !important;
-  gap:12px !important;
-}
-
-/* ロゴは左、ナビは横スクロール（縦積み禁止） */
-.brandTitle{
-  font-size: 30px !important;
-  line-height:1 !important;
-}
-.topNav{
-  width:100% !important;
-  flex-wrap:nowrap !important;        /* ←縦積み禁止 */
-  overflow-x:auto !important;
-  white-space:nowrap !important;
-  gap:10px !important;
-  padding-bottom:4px !important;
-}
-.navItem{
-  flex: 0 0 auto !important;
-}
-
-/* 受付状態＋閉店ボタンは横に並べて見やすく */
-.shopBar{
-  width:100% !important;
-  justify-content:flex-end !important;
-  flex-wrap:nowrap !important;
-  gap:10px !important;
-  overflow-x:auto !important;
-}
-.badge-open, .badge-close{
-  color:#fff !important;
-  background: rgba(0,0,0,.18) !important;
-  border: 2px solid rgba(255,255,255,.28) !important;
-}
-
-/* ツール列（件数/更新/自動更新）も横並び維持 */
-.toolRow{
-  flex-wrap:wrap !important;
-}
-.toolRight{
-  width:100% !important;
-  justify-content:flex-start !important;
-  flex-wrap:nowrap !important;
-  overflow-x:auto !important;
-  white-space:nowrap !important;
-}
-
-/* モバイルでも ui_dark.css の input{width:100%} を潰す */
-.toolRight select,
-.toolRight button,
-.toolLeft .pill{
-  width:auto !important;
-  flex: 0 0 auto !important;
-}
-</style>
-<style>
-/* ===== HOTFIX v1b: mobileで商品名だけ透明になるのを強制解除 ===== */
-.card .list .lineName{
-  color:#111 !important;
-
-  /* 透明化の犯人を殺す */
-  background: none !important;
-  -webkit-background-clip: border-box !important;
-  background-clip: border-box !important;
-  -webkit-text-fill-color: #111 !important;
-
-  /* 念のため */
-  opacity: 1 !important;
-  visibility: visible !important;
-  display: block !important;
-  text-shadow: none !important;
-  filter: none !important;
-}
-</style>
-<style>
-/* ===== FINAL FIX: mobileで商品名が消える問題を完全に止める ===== */
-#lineFix, #lineFix * { all: unset; } /* 何もしてない保険（無視されるだけ） */
-
-#orderList .lineRow .lineName,
-#othersList .lineRow .lineName,
-.card .list .lineRow .lineName{
-  color:#111 !important;
-  background:none !important;
-  -webkit-background-clip: initial !important;
-  background-clip: initial !important;
-  -webkit-text-fill-color:#111 !important;
-  opacity:1 !important;
-  visibility:visible !important;
-  display:block !important;
-  min-width: 0 !important;
-}
-</style>
-
 </body>
 </html>
-
