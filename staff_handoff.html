@@ -5,89 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>SERVE STATION</title>
 
-  <!-- ベース（既存） -->
-  <link rel="stylesheet" href="./ui_dark.css?v=2">
-
-  <!-- 共通テーマ（既存） -->
-  <link rel="stylesheet" href="./ui_theme.css?v=1">
-
-  <!-- ★最小上書き：機能は触らず、あなたの理想の配置と視認性だけ確定 -->
-  <style>
-    /* ① 文字の太さを戻す（以前の“太い”感じ） */
-    .name, .price, .navItem, .pill, .btn, .lineName, .lineQty, .lineSum {
-      font-weight: 1000 !important;
-    }
-
-    /* ② スマホのヘッダーが見にくい問題：背景と余白を安定させる（以前に近い視認性） */
-    header.appHeader{
-      background: #51565f !important; /* ui_theme の --hdr-bg と同等 */
-      border-bottom: 1px solid rgba(255,255,255,.18) !important;
-    }
-    .brandTitle{
-      font-size: 28px !important;
-      letter-spacing: 1.2px !important;
-    }
-
-    /* ③ 内訳：あなたの理想（左=商品名 / 右=×数量 + 小計）を全幅で固定 */
-    .card .list .lineRow{
-      display:flex !important;
-      align-items:center !important;
-      justify-content:space-between !important;
-      flex-wrap:nowrap !important;
-      gap:12px !important;
-    }
-    .card .list .lineName{
-      flex: 1 1 auto !important;
-      min-width: 0 !important;
-      text-align:left !important;
-
-      white-space: nowrap !important;
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
-
-      /* ★iPhone Safari で“文字だけ消える”事故を確実に殺す */
-      color: #111 !important;
-      -webkit-text-fill-color: #111 !important;
-      background: none !important;
-      opacity: 1 !important;
-      visibility: visible !important;
-    }
-    .card .list .lineMeta{
-      flex: 0 0 auto !important;
-      display:flex !important;
-      align-items:baseline !important;
-      justify-content:flex-end !important;
-      gap: 12px !important;
-      white-space: nowrap !important;
-      text-align:right !important;
-    }
-    .card .list .lineQty{
-      color: rgba(15,23,42,.70) !important;
-    }
-    .card .list .lineSum{
-      color: rgba(15,23,42,.86) !important;
-      background: none !important;
-      -webkit-text-fill-color: rgba(15,23,42,.86) !important;
-    }
-
-    /* ④ 体感速度：読み込み中メッセージが見えるように最低高さを確保（ラグに見えない） */
-    #orderList{ min-height: 120px; }
-
-    /* ⑤ スマホでコントロールが縦に崩れる事故を防ぐ（左詰め／必要なら横スクロール） */
-    .toolRow{ flex-wrap:wrap; }
-    .toolRight{
-      width:100%;
-      justify-content:flex-start !important;
-      overflow-x:auto;
-      -webkit-overflow-scrolling: touch;
-    }
-    .toolRight select,
-    .toolRight button,
-    .toolLeft .pill{
-      width:auto !important;
-      flex: 0 0 auto;
-    }
-  </style>
+  <!-- ✅ CSSは統合版1本だけ -->
+  <link rel="stylesheet" href="./ui.css?v=1">
 </head>
 
 <body>
@@ -141,7 +60,8 @@
         <option value="60">自動 60秒</option>
       </select>
 
-      <button class="btn btnPrimary" id="btnAuto">自動更新：OFF</button>
+      <!-- ✅ btnPrimary はCSS競合の元になりやすいのでやめて .btn に統一 -->
+      <button class="btn" id="btnAuto">自動更新：OFF</button>
     </div>
   </div>
 
@@ -197,7 +117,8 @@
 
     <div class="stickyFoot">
       <div class="actions">
-        <button class="btn btnPrimary" id="mSave">保存</button>
+        <!-- ✅ btnPrimary はやめて .btn に統一 -->
+        <button class="btn" id="mSave">保存</button>
         <button class="btn btnOk" id="mHanded">受け渡し完了</button>
         <button class="btn btnDanger" id="mCancel">キャンセル</button>
       </div>
@@ -211,6 +132,8 @@
 </script>
 
 <script src="./handoff.js"></script>
+
+<!-- もし ui.js が「モーダル/共通UIのJS」なら残してOK。不要なら消してOK -->
 <script src="./ui.js?v=1"></script>
 </body>
 </html>
