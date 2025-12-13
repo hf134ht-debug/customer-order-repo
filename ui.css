@@ -570,20 +570,6 @@ summary{ cursor:pointer; font-weight:1100; }
 }
 
 /* =========================================================
-   GLOBAL BACKGROUND : Stylish & Pop (Unified)
-========================================================= */
-
-/* 全画面の土台背景 */
-body{
-  background:
-    radial-gradient(800px 600px at 10% -10%, rgba(99,102,241,.20), transparent 60%),
-    radial-gradient(700px 500px at 110% 10%, rgba(34,211,238,.18), transparent 55%),
-    radial-gradient(900px 700px at 40% 120%, rgba(34,197,94,.14), transparent 60%),
-    linear-gradient(180deg, #3f444c, #4b5059 35%, #3b3f46);
-  background-attachment: fixed;
-}
-
-/* =========================================================
    HEADER : 背景と一体化させてスッキリ
 ========================================================= */
 header.appHeader{
@@ -653,14 +639,56 @@ details{
 }
 
 /* =========================================================
-   モバイルでも背景が汚くならない調整
+   BACKGROUND : Dark w/ Neon Atmosphere (not too dark)
 ========================================================= */
+body{
+  /* ベースを“真っ黒”にしない：青みチャコール */
+  background-color:#4a4f58;
+
+  /* ネオンの“滲み”を増やして、でも暗くしすぎない */
+  background-image:
+    /* 左上：パープルのにじみ */
+    radial-gradient(900px 650px at 8% -10%,
+      rgba(168, 85, 247, .26), transparent 62%),
+
+    /* 右上：シアンのにじみ */
+    radial-gradient(820px 600px at 108% 6%,
+      rgba(34, 211, 238, .22), transparent 58%),
+
+    /* 下：グリーンの気配 */
+    radial-gradient(980px 720px at 45% 118%,
+      rgba(34, 197, 94, .18), transparent 62%),
+
+    /* 中央：ほんのり光のベール（暗すぎ回避） */
+    radial-gradient(1200px 900px at 50% 55%,
+      rgba(255,255,255,.08), transparent 55%),
+
+    /* 縦方向のメリハリ：上は少し明るく、下は締める */
+    linear-gradient(180deg,
+      rgba(255,255,255,.10),
+      rgba(0,0,0,.02) 28%,
+      rgba(0,0,0,.08) 100%),
+
+    /* 最終ベースグラデ：屋台っぽい“夜の空気” */
+    linear-gradient(180deg, #545a64 0%, #4a4f58 40%, #454a52 100%);
+
+  background-attachment: fixed;
+}
+
+/* モバイルは少し明るく（暗いだけ問題の再発防止） */
 @media (max-width: 520px){
   body{
-    background:
-      radial-gradient(600px 500px at 15% -10%, rgba(99,102,241,.18), transparent 60%),
-      radial-gradient(600px 500px at 110% 10%, rgba(34,211,238,.16), transparent 55%),
-      linear-gradient(180deg, #41464f, #3b3f46);
+    background-image:
+      radial-gradient(700px 520px at 10% -10%,
+        rgba(168, 85, 247, .22), transparent 62%),
+      radial-gradient(680px 500px at 110% 8%,
+        rgba(34, 211, 238, .20), transparent 58%),
+      radial-gradient(820px 620px at 50% 120%,
+        rgba(34, 197, 94, .16), transparent 62%),
+      radial-gradient(980px 720px at 50% 55%,
+        rgba(255,255,255,.10), transparent 55%),
+      linear-gradient(180deg, #5b616c 0%, #4a4f58 45%, #444952 100%);
   }
 }
+
 
