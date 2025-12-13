@@ -1,122 +1,160 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <link rel="stylesheet" href="./ui_dark.css?v=1">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>設定（オーナー）</title>
 
+  <!-- ✅ 統一CSS -->
+  <link rel="stylesheet" href="./ui.css?v=1">
+
   <style>
-    body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;margin:14px;}
-    header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
-    nav a{margin-right:10px;text-decoration:none;}
+    /* owner だけ必要な最小テーブル調整（機能に影響なし） */
+    .ownerBar{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .ownerTable{ width:100%; border-collapse:collapse; margin-top:10px; }
+    .ownerTable th,.ownerTable td{
+      border-bottom:1px dashed rgba(17,24,39,.12);
+      padding:10px 8px;
+      vertical-align:top;
+    }
+    .ownerTable th{ font-size:12px; opacity:.75; text-align:left; }
+    .w80{ width:80px; } .w120{ width:120px; } .w160{ width:160px; }
 
-    .wrap{max-width:980px;}
-    .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0;}
-    button{padding:8px 12px;border:1px solid #bbb;border-radius:10px;background:#fff;cursor:pointer;}
-    .msg{margin:8px 0;color:#c00;}
+    /* ui.css の input 定義を活かすため classは付けない（IDのまま） */
+    .rowbtn{ display:flex; gap:8px; flex-wrap:wrap; }
+    .pill{
+      display:inline-block;
+      font-size:12px;
+      padding:4px 10px;
+      border-radius:999px;
+      border:2px solid rgba(17,24,39,.14);
+      background:#fff;
+      font-weight:1000;
+    }
+    .pill.on{ background:#ffe8c7; border-color:#f59e0b; }
+    .pill.off{ background:#dbffe5; border-color:#1faa59; }
 
-    table{width:100%;border-collapse:collapse;margin-top:10px;}
-    th,td{border-bottom:1px solid #eee;padding:8px;vertical-align:top;}
-    th{font-size:12px;opacity:.75;text-align:left;}
-    input{padding:6px;border:1px solid #ddd;border-radius:8px;width:100%;}
-    .w80{width:80px;}
-    .w120{width:120px;}
-    .w160{width:160px;}
-    .rowbtn{display:flex;gap:8px;flex-wrap:wrap;}
-    .pill{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid #bbb;}
-    .pill.on{background:#ffe8c7;border-color:#f59e0b;}
-    .pill.off{background:#dbffe5;border-color:#1faa59;}
-    .small{font-size:12px;opacity:.8;}
-    .card{border:1px solid #ddd;border-radius:14px;padding:10px;background:#fff;margin-top:14px;}
-    .grid{display:grid;grid-template-columns:160px 1fr;gap:8px;align-items:center;}
+    .ownerGrid{ display:grid; grid-template-columns:160px 1fr; gap:10px; align-items:center; }
+    @media (max-width:520px){
+      .ownerGrid{ grid-template-columns:1fr; }
+    }
+
+    /* select も ui.css の見た目に寄せる */
+    select{
+      border:2px solid rgba(255,255,255,.50);
+      background: rgba(255,255,255,.92);
+      color:#111;
+      padding:10px 12px;
+      border-radius:14px;
+      font-weight:1000;
+    }
   </style>
 
   <script>
     window.GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzeeGTJKZXHsVEw8DMz_QahMsnbqAUzDM3D_9mnv1LpVRxIitpL0F3xlCTwKUjV0OURzQ/exec";
   </script>
 </head>
+
 <body>
-  <header>
-    <h2>設定（オーナー）</h2>
-    <nav>
-      <a href="./staff_handoff.html">受け渡し</a>
-      <a href="./history.html">履歴</a>
-      <a href="./sales.html">売上</a>
-      <a href="./owner.html">設定</a>
-    </nav>
+  <!-- ✅ 共通ヘッダー -->
+  <header class="appHeader">
+    <div class="wrap">
+      <div class="headRow">
+        <div class="brandTitle">OWNER</div>
+
+        <nav class="topNav">
+          <a class="navItem" href="./staff_handoff.html">受け渡し</a>
+          <a class="navItem" href="./history.html">履歴</a>
+          <a class="navItem" href="./sales.html">売上</a>
+          <a class="navItem active" href="./owner.html">設定</a>
+        </nav>
+      </div>
+    </div>
   </header>
 
-  <div class="wrap">
-    <div class="card">
-  <div style="font-weight:900;margin-bottom:8px;">運用設定</div>
-  <div class="grid">
-    <div>注文受付</div>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-      <span id="ownerShopState" style="font-weight:900;"></span>
-      <button id="ownerToggleShop">閉店/営業切替</button>
+  <main class="wrap">
+    <div class="grid">
+
+      <!-- 運用設定 -->
+      <section class="card">
+        <div class="sectionTitle" style="margin:0 0 10px;">運用設定</div>
+
+        <div class="ownerGrid">
+          <div>注文受付</div>
+          <div class="ownerBar">
+            <span id="ownerShopState" style="font-weight:1100;"></span>
+            <button class="btn" id="ownerToggleShop">閉店/営業切替</button>
+          </div>
+
+          <div>自動受け渡し（分）</div>
+          <div>
+            <select id="autoMin">
+              <option value="30">30</option>
+              <option value="60">60</option>
+              <option value="90">90</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="actions" style="justify-content:flex-start;">
+          <button class="btn" id="saveOps">設定を保存</button>
+        </div>
+
+        <div id="msg" class="msg" style="margin-top:10px;"></div>
+      </section>
+
+      <!-- 商品編集ツールバー -->
+      <section class="card">
+        <div class="toolRow" style="padding:0;">
+          <div class="toolLeft">
+            <div class="sectionTitle" style="margin:0;">商品マスタ</div>
+            <span class="muted">※ 価格・売切・表示順の編集ができます</span>
+          </div>
+          <div class="toolRight" style="justify-content:flex-end;">
+            <button class="btn" id="btnReload">再読込</button>
+            <button class="btn btnDanger" id="btnResetSoldOut">売切を全解除</button>
+          </div>
+        </div>
+
+        <table class="ownerTable">
+          <thead>
+            <tr>
+              <th class="w120">商品ID</th>
+              <th>商品名</th>
+              <th class="w120">価格</th>
+              <th class="w120">表示順</th>
+              <th class="w120">売切</th>
+              <th class="w160">操作</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </section>
+
+      <!-- 商品追加 / 更新 -->
+      <section class="card">
+        <div class="sectionTitle" style="margin:0 0 10px;">商品追加 / 更新</div>
+
+        <div class="ownerGrid" style="grid-template-columns:160px 1fr;">
+          <div>説明</div><input id="add_desc" placeholder="説明">
+          <div>画像URL</div><input id="add_img" placeholder="https://...">
+          <div>動画URL</div><input id="add_vid" placeholder="https://...">
+
+          <div>商品ID（必須）</div><input id="add_id" placeholder="例: P010">
+          <div>商品名</div><input id="add_name" placeholder="例: トルネードポテト（塩）">
+          <div>価格</div><input id="add_price" type="number" placeholder="例: 500">
+          <div>表示順</div><input id="add_sort" type="number" placeholder="例: 10">
+        </div>
+
+        <div class="actions" style="justify-content:flex-start;">
+          <button class="btn" id="btnAdd">保存（追加/更新）</button>
+        </div>
+      </section>
+
     </div>
+  </main>
 
-    <div>自動受け渡し（分）</div>
-    <select id="autoMin">
-      <option value="30">30</option>
-      <option value="60">60</option>
-      <option value="90">90</option>
-    </select>
-
-  </div>
-
-  <div class="bar" style="margin-top:10px;">
-    <button id="saveOps">設定を保存</button>
-  </div>
-</div>
-
-    <div class="bar">
-      <button id="btnReload">再読込</button>
-      <button id="btnResetSoldOut">売切を全解除</button>
-      <span class="small">※ 価格・売切・表示順の編集ができます</span>
-    </div>
-
-    <div id="msg" class="msg"></div>
-
-    <table>
-      <thead>
-        <tr>
-          <th class="w120">商品ID</th>
-          <th>商品名</th>
-          <th class="w120">価格</th>
-          <th class="w120">表示順</th>
-          <th class="w120">売切</th>
-          <th class="w160">操作</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-
-    <div class="card">
-      <div style="font-weight:900;margin-bottom:8px;">商品追加 / 更新</div>
-      <div>説明</div><input id="add_desc" placeholder="説明">
-      <div>画像URL</div><input id="add_img" placeholder="https://...">
-      <div>動画URL</div><input id="add_vid" placeholder="https://...">
-
-      <div class="grid">
-        <div>商品ID（必須）</div><input id="add_id" placeholder="例: P010">
-        <div>商品名</div><input id="add_name" placeholder="例: トルネードポテト（塩）">
-        <div>価格</div><input id="add_price" type="number" placeholder="例: 500">
-        <div>表示順</div><input id="add_sort" type="number" placeholder="例: 10">
-      </div>
-      <div class="bar" style="margin-top:10px;">
-        <button id="btnAdd">保存（追加/更新）</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="./owner.js"></script>
-  <script src="./ui.js?v=1"></script>
+  <script src="./owner.js?v=1"></script>
+  <!-- ✅ ui.js は以前 SyntaxError が出ていたので owner では読み込まない（機能に不要） -->
 </body>
 </html>
-
-
-
-
-
