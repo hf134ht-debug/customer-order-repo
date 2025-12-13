@@ -1141,3 +1141,30 @@ header{
   #calGrid .day{ height:50px; border-radius:14px; }
   .histCalTitle{ font-size:16px; }
 }
+
+/* =========================================================
+   HISTORY calendar text fix
+   - 日付が透明化/白抜けで見えないのを確殺
+========================================================= */
+#calGrid .day,
+#calGrid .day *{
+  opacity: 1 !important;
+  visibility: visible !important;
+  color: rgba(255,255,255,.96) !important;
+  -webkit-text-fill-color: rgba(255,255,255,.96) !important;
+  text-shadow: 0 2px 10px rgba(0,0,0,.35);
+}
+
+/* 月外は少し薄く */
+#calGrid .day.off,
+#calGrid .day.off *{
+  color: rgba(255,255,255,.55) !important;
+  -webkit-text-fill-color: rgba(255,255,255,.55) !important;
+}
+
+/* 選択日・データあり日はコントラストを上げる */
+#calGrid .day.has,
+#calGrid .day.sel{
+  border-width: 2px !important;
+}
+
