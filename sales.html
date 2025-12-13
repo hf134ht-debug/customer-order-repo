@@ -96,6 +96,35 @@
       <div class="msg" id="msg"></div>
     </div>
 
+    <div class="box" style="margin-top:14px;">
+  <div style="font-weight:900;margin-bottom:8px;">期間集計</div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;">
+    <button id="btnThisWeek">今週</button>
+    <button id="btnThisMonth">今月</button>
+
+    <div>
+      <div class="sub">From</div>
+      <input id="rangeFrom" type="date">
+    </div>
+    <div>
+      <div class="sub">To</div>
+      <input id="rangeTo" type="date">
+    </div>
+    <button id="btnApplyRange">この期間で集計</button>
+  </div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px;">
+    <span style="font-weight:800;">ランキング並び：</span>
+    <button id="sortBySales">売上順</button>
+    <button id="sortByQty">数量順</button>
+    <button id="btnCopyTSV">CSV出力（Sheets貼付）</button>
+  </div>
+
+  <div id="rangeSummary" style="margin-top:10px;"></div>
+  <div id="rangeRanking" style="margin-top:10px;"></div>
+</div>
+
     <div class="cards" id="cards"></div>
 
     <div class="box">
@@ -109,3 +138,4 @@
   <script>document.body.insertAdjacentHTML("beforeend","<div style='opacity:.6;font-size:12px;margin-top:10px;'>sales.html loaded</div>");</script>
 </body>
 </html>
+
