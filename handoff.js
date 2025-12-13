@@ -616,21 +616,22 @@ async function initShopToggle_() {
   } catch {}
 
   const btn = qs("#btnToggleShop");
-if (!btn) return;
+  if (!btn) return;
 
-btn.addEventListener("click", async () => {
-  const isOpenNow = qs("#shopState")?.classList.contains("badge-open");
-  const nextLabel = isOpenNow ? "閉店（受付停止）" : "開店（受付再開）";
+  btn.addEventListener("click", async () => {
+    const isOpenNow = qs("#shopState")?.classList.contains("badge-open");
+    const nextLabel = isOpenNow ? "閉店（受付停止）" : "開店（受付再開）";
 
-  if (!confirm(`${nextLabel}に切り替えます。\nよろしいですか？`)) return;
+    if (!confirm(`${nextLabel}に切り替えます。\nよろしいですか？`)) return;
 
-  try {
-    const r = await apiPost({ mode: "toggleShopOpen" });
-    if (r.ok) renderShopState_(!!r.SHOP_OPEN);
-  } catch (e) {
-    setMsg("err", `切り替えに失敗しました。\n詳細: ${String(e?.message || e)}`);
-  }
-});
+    try {
+      const r = await apiPost({ mode: "toggleShopOpen" });
+      if (r.ok) renderShopState_(!!r.SHOP_OPEN);
+    } catch (e) {
+      setMsg("err", `切り替えに失敗しました。\n詳細: ${String(e?.message || e)}`);
+    }
+  });
+} // ✅ ← これが無かった（超重要）
 
 /* ===== events ===== */
 function bindEventsOnce() {
@@ -659,21 +660,20 @@ function bindEventsOnce() {
     }
   });
 
-  qs("#mSearch")?.addEventListener("input", () => { if (editingOrder) renderModal(); });
+  qs("#mSearch")?.addEventListener("input", () => {
+    if (editingOrder) renderModal();
+  });
 
   qs("#mSave")?.addEventListener("click", saveDraft);
-  qs("#mHanded")?.addEventListener("click", async () => { if (editingOrder) await completeOrder(editingOrder.order_id); });
-  qs("#mCancel")?.addEventListener("click", async () => { if (editingOrder) await cancelOrder(editingOrder.order_id); });
+  qs("#mHanded")?.addEventListener("click", async () => {
+    if (editingOrder) await completeOrder(editingOrder.order_id);
+  });
+  qs("#mCancel")?.addEventListener("click", async () => {
+    if (editingOrder) await cancelOrder(editingOrder.order_id);
+  });
 }
 
-/* ===== init（1回だけ） ===== */
-(function init() {
-  if (!GAS_WEB_APP_URL || !GAS_WEB_APP_URL.includes("script.google.com")) {
-    setMsg("err", "GAS_WEB_APP_URL が未設定です。");
-    return;
-  }
-
- /* ===== init（1回だけ・安全版） ===== */
+/* ===== init（1回だけ・安全版） ===== */
 function boot() {
   if (!GAS_WEB_APP_URL || !GAS_WEB_APP_URL.includes("script.google.com")) {
     setMsg("err", "GAS_WEB_APP_URL が未設定です。");
