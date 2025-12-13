@@ -1,44 +1,60 @@
-/* ui.css (Unified) - SERVE STATION staff/history/sales/owner 共通テーマ
-   - headerはSERVE色
-   - 背景は“負けない”濃さ
-   - カードは浮く
-   - iPhone Safariで「商品名だけ消える」対策をCSS側で確定
-*/
+/* =========================================================
+   ui.css  SERVE STATION Unified UI
+   - single source of truth
+   - mobile first / Safari safe
+   - bold, readable, pop
+========================================================= */
 
 /* =========================
-   TOKENS
+   DESIGN TOKENS
 ========================= */
 :root{
-  --hdr-bg:#51565f;
-  --hdr-ink:#fff;
-
+  /* brand */
   --a1:#9b5cff;
   --a2:#43c7ff;
   --a3:#33d17a;
   --danger:#ff5a7a;
 
+  /* header */
+  --hdr-bg:#51565f;
+  --hdr-ink:#ffffff;
+
+  /* surface */
   --bg:#e6e9f2;
-  --card:#fff;
+  --card:#ffffff;
   --ink:#111827;
   --muted:#6b7280;
-  --line: rgba(15,23,42,.14);
+  --line:rgba(15,23,42,.14);
 
-  --r1:16px;
+  /* radius / shadow */
+  --r1:14px;
   --r2:22px;
+  --shadow:0 18px 45px rgba(0,0,0,.18);
+  --shadow2:0 10px 22px rgba(0,0,0,.14);
 
-  --shadow: 0 18px 45px rgba(0,0,0,.18);
-  --shadow2: 0 10px 22px rgba(0,0,0,.14);
+  /* font weight */
+  --fw:1000;
 }
 
 /* =========================
-   BASE
+   RESET / BASE
 ========================= */
 *{ box-sizing:border-box; }
 html,body{ height:100%; }
+
 body{
   margin:0;
-  font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif;
-  color: var(--ink);
+  font-family:
+    "Inter",
+    "Noto Sans JP",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    "Hiragino Kaku Gothic ProN",
+    "Yu Gothic",
+    sans-serif;
+  color:var(--ink);
+  font-weight:700;
 
   background:
     radial-gradient(900px 600px at 15% -10%, rgba(168,85,247,.10), transparent 55%),
@@ -49,16 +65,20 @@ body{
 }
 
 a{ color:inherit; text-decoration:none; }
-.wrap{ max-width:980px; margin:0 auto; padding:10px 12px 30px; }
-.grid{ display:flex; flex-direction:column; gap:14px; }
+.small,.muted{ color:var(--muted); font-size:12px; }
 
-.muted{ color:var(--muted); font-size:12px; }
-.small{ font-size:12px; color:var(--muted); }
-
-.sectionTitle{
-  margin: 18px 0 10px;
-  font-weight: 1100;
-  font-size: 18px;
+/* =========================
+   LAYOUT
+========================= */
+.wrap{
+  max-width:980px;
+  margin:0 auto;
+  padding:12px;
+}
+.grid{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
 }
 
 /* =========================
@@ -68,8 +88,8 @@ header.appHeader{
   position:sticky;
   top:0;
   z-index:20;
-  background: var(--hdr-bg);
-  border-bottom: 1px solid rgba(255,255,255,.18);
+  background:var(--hdr-bg);
+  border-bottom:1px solid rgba(255,255,255,.18);
 }
 
 .headRow{
@@ -77,171 +97,125 @@ header.appHeader{
   align-items:center;
   justify-content:space-between;
   gap:14px;
-  padding:12px 0;
 }
 
 .brandTitle{
-  font-weight: 1100;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  font-size: 28px;
-  line-height: 1;
-  background: linear-gradient(90deg, var(--a1), var(--a2));
+  font-size:28px;
+  font-weight:var(--fw);
+  letter-spacing:1.2px;
+  background:linear-gradient(90deg,var(--a1),var(--a2));
   -webkit-background-clip:text;
   background-clip:text;
-  color: transparent;
+  color:transparent;
 }
 
 /* nav */
 .topNav{
   display:flex;
   gap:10px;
-  align-items:center;
-  flex-wrap:wrap;
 }
 .navItem{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
   padding:10px 14px;
   border-radius:999px;
-  border:2px solid rgba(255,255,255,.60);
-  color: var(--hdr-ink);
-  font-weight: 1000;
-  background: rgba(255,255,255,.06);
-  transition: transform .06s ease, filter .12s ease, background .12s ease;
-}
-.navItem:active{ transform: scale(.98); }
-.navItem.active{
-  border-color: rgba(67,199,255,.90);
-  box-shadow: 0 0 0 4px rgba(67,199,255,.18);
-}
-
-/* shop bar */
-.shopBar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-.badge-open,.badge-close{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:10px 14px;
-  border-radius:999px;
-  font-weight:1100;
+  border:2px solid rgba(255,255,255,.6);
+  background:rgba(255,255,255,.06);
   color:#fff;
-  border:2px solid rgba(255,255,255,.30);
-  background: rgba(0,0,0,.16);
+  font-weight:var(--fw);
 }
-.dot-open,.dot-close{ width:10px; height:10px; border-radius:50%; }
-.dot-open{ background: var(--a3); box-shadow:0 0 12px rgba(51,209,122,.35); }
-.dot-close{ background: var(--danger); box-shadow:0 0 12px rgba(255,90,122,.35); }
+.navItem.active{
+  border-color:rgba(67,199,255,.9);
+  box-shadow:0 0 0 4px rgba(67,199,255,.18);
+}
 
-/* =========================
-   TOOL ROW
-========================= */
-.toolRow{
+/* shop state */
+.shopBar{
   display:flex;
-  align-items:center;
-  justify-content:space-between;
   gap:10px;
-  padding: 0 0 12px;
+  align-items:center;
   flex-wrap:wrap;
 }
+.badge-open,.badge-close{
+  display:inline-flex;
+  gap:8px;
+  align-items:center;
+  padding:10px 14px;
+  border-radius:999px;
+  font-weight:var(--fw);
+  color:#fff;
+  background:rgba(0,0,0,.18);
+  border:2px solid rgba(255,255,255,.3);
+}
+.dot-open,.dot-close{
+  width:10px;height:10px;border-radius:50%;
+}
+.dot-open{ background:var(--a3); }
+.dot-close{ background:var(--danger); }
+
+/* tool row */
+.toolRow{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  justify-content:space-between;
+  padding-bottom:10px;
+}
+.toolLeft{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
 .toolRight{
-  width:100%;
   display:flex;
   gap:10px;
   align-items:center;
-  justify-content:flex-start;
   overflow-x:auto;
   white-space:nowrap;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom:4px;
-}
-.pill{
-  padding:10px 14px;
-  border-radius:999px;
-  border:2px solid rgba(255,255,255,.55);
-  background: rgba(255,255,255,.06);
-  color:#fff;
-  font-weight:1100;
-  min-width:4.5em;
-  text-align:center;
 }
 
-select, input[type="search"], input[type="text"], input[type="number"]{
-  border:2px solid rgba(255,255,255,.50);
-  background: rgba(255,255,255,.92);
+/* =========================
+   CONTROLS
+========================= */
+select,input,button,.pill{
+  font-family:inherit;
+  font-weight:var(--fw);
+  border-radius:var(--r1);
+  border:2px solid var(--line);
+  background:#fff;
   color:#111;
   padding:10px 12px;
-  border-radius:14px;
-  font-weight:1000;
-}
-select:focus, input:focus{
-  outline:none;
-  box-shadow: 0 0 0 4px rgba(155,92,255,.20);
-  border-color: rgba(155,92,255,.65);
 }
 
-/* =========================
-   BUTTONS
-========================= */
+.pill{
+  background:rgba(255,255,255,.92);
+}
+
 .btn{
-  border: 2px solid var(--line);
-  background: rgba(255,255,255,.92);
-  color:#111;
-  padding:10px 14px;
-  border-radius:14px;
-  font-weight: 1000;
   cursor:pointer;
-  transition: transform .06s ease, filter .12s ease;
 }
-.btn:active{ transform: scale(.98); }
-.btn:disabled{ opacity:.55; cursor:not-allowed; }
+.btn:active{ transform:scale(.98); }
 
-.btn-close{
-  background: rgba(255,90,122,.16);
-  border-color: rgba(255,90,122,.55);
-  color:#fff;
+.btnPrimary{
+  background:rgba(67,199,255,.18);
+  border-color:rgba(67,199,255,.55);
 }
-.btn-open{
-  background: rgba(51,209,122,.16);
-  border-color: rgba(51,209,122,.55);
-  color:#fff;
-}
+
 .btnOk{
-  background: rgba(51,209,122,.18);
-  border-color: rgba(51,209,122,.50);
-  color:#0b3b24;
+  background:rgba(51,209,122,.18);
+  border-color:rgba(51,209,122,.55);
 }
 .btnDanger{
-  background: rgba(255,90,122,.16);
-  border-color: rgba(255,90,122,.55);
-  color:#6a0e22;
-}
-
-/* =========================
-   MESSAGE
-========================= */
-.msg{
-  margin: 10px 0;
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 2px solid rgba(17,24,39,.12);
-  background: rgba(255,255,255,.88);
-}
-.msg.err{
-  border-color: rgba(255,90,122,.40);
-  background: rgba(255,90,122,.10);
-  color:#7a0f28;
+  background:rgba(255,90,122,.16);
+  border-color:rgba(255,90,122,.55);
 }
 
 /* =========================
    CARD
 ========================= */
 .card{
-  background: var(--card);
-  border-radius: var(--r2);
-  border: 4px solid rgba(67,199,255,.35);
-  box-shadow: var(--shadow);
+  background:var(--card);
+  border-radius:var(--r2);
+  border:4px solid rgba(67,199,255,.35);
+  box-shadow:var(--shadow);
   padding:14px;
   position:relative;
 }
@@ -249,219 +223,125 @@ select:focus, input:focus{
   content:"";
   position:absolute;
   inset:8px;
-  border-radius: calc(var(--r2) - 8px);
+  border-radius:calc(var(--r2) - 8px);
   border:3px solid rgba(155,92,255,.22);
   pointer-events:none;
 }
 
-.row{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
-.name{ font-weight:1100; font-size:18px; letter-spacing:.2px; }
-.price{ font-weight:1200; font-size:18px; }
-.divider{ height:1px; background: rgba(15,23,42,.10); margin:12px 0; }
-
-.actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:12px; flex-wrap:wrap; }
+.row{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+}
+.name,.price{
+  font-weight:var(--fw);
+  font-size:18px;
+}
+.divider{
+  height:1px;
+  background:var(--line);
+  margin:12px 0;
+}
 
 /* =========================
-   LINES (内訳)
-   ★ iPhone Safari “文字だけ消える” を CSSで確殺
+   ORDER LINES
 ========================= */
 .list{
   list-style:none;
   padding:0;
-  margin:12px 0 0;
+  margin:10px 0 0;
   display:flex;
   flex-direction:column;
   gap:10px;
 }
+
 .lineRow{
   display:flex;
-  align-items:center;
   justify-content:space-between;
+  align-items:center;
   gap:12px;
-  padding:12px 12px;
+  padding:12px;
   border-radius:16px;
-  border:3px solid rgba(17,24,39,.10);
-  background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.70));
-  box-shadow: var(--shadow2);
+  background:linear-gradient(180deg,#fff,rgba(255,255,255,.75));
+  box-shadow:var(--shadow2);
 }
-.lineName{
-  font-size:18px;
-  font-weight:1100;
-  letter-spacing:.2px;
 
+.lineName{
   flex:1 1 auto;
   min-width:0;
+  font-weight:var(--fw);
+  white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
-  white-space:nowrap;
 
-  /* ✅ここが重要：Safariで透明化されない */
-  color:#111 !important;
-  background:none !important;
-  opacity:1 !important;
-  visibility:visible !important;
-  -webkit-text-fill-color:#111 !important;
+  /* Safari文字消失対策 */
+  color:#111;
+  -webkit-text-fill-color:#111;
+  background:none;
+  opacity:1;
+  visibility:visible;
 }
+
 .lineMeta{
-  flex:0 0 auto;
   display:flex;
-  align-items:baseline;
   gap:12px;
   white-space:nowrap;
 }
-.lineQty{
-  font-size:17px;
-  font-weight:1100;
-  color: rgba(15,23,42,.70);
+.lineQty,.lineSum{
+  font-weight:var(--fw);
 }
-.lineSum{
-  font-size:18px;
-  font-weight:1200;
-  color: rgba(15,23,42,.86);
-  background:none !important;
-  -webkit-text-fill-color: rgba(15,23,42,.86) !important;
-}
-
-.lineEmpty{ color:var(--muted); padding:6px 2px; }
 
 /* =========================
-   OTHERS (details)
+   ACTIONS
 ========================= */
-details{
-  border: 2px solid rgba(17,24,39,.10);
-  background: rgba(255,255,255,.88);
-  border-radius: 18px;
+.actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  margin-top:12px;
+}
+
+/* =========================
+   MESSAGES / DETAILS
+========================= */
+.msg{
   padding:10px 12px;
-}
-summary{ cursor:pointer; font-weight:1100; }
-.otherRow{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding:10px 0;
-  border-top: 1px dashed rgba(17,24,39,.18);
-  cursor:pointer;
-}
-.otherRow:first-of-type{ border-top:none; }
-
-/* =========================
-   RANK buttons
-========================= */
-.rankBtns{ display:flex; gap:6px; }
-.rankBtn{
-  padding:8px 10px;
-  border-radius:12px;
-  border:2px solid rgba(255,255,255,.35);
-  background: rgba(0,0,0,.10);
-  color:#fff;
-  font-weight:1100;
-}
-.rankBtn:disabled{ opacity:.45; }
-
-/* =========================
-   MODAL / OVERLAY
-========================= */
-.overlay{
-  position:fixed;
-  inset:0;
-  background: rgba(0,0,0,.45);
-  display:none;
-  align-items:flex-end;
-  justify-content:center;
-  z-index:50;
-  padding: 10px;
-}
-.overlay.show{ display:flex; }
-
-.modal{
-  width: min(980px, 100%);
-  max-height: 92vh;
-  overflow:auto;
-  background: rgba(255,255,255,.96);
-  border: 2px solid rgba(17,24,39,.14);
-  border-radius: 22px;
-  box-shadow: var(--shadow);
-  padding: 12px;
-}
-
-.modalHead{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:10px;
-}
-.modalTitle{ font-weight:1100; font-size:18px; }
-.mini{ color:var(--muted); font-size:12px; margin-top:4px; }
-
-.searchBox{ display:flex; gap:10px; margin-top:8px; }
-
-.itemRow{
-  display:flex;
-  gap:10px;
-  align-items:center;
-  justify-content:space-between;
-  padding:10px 0;
-  border-bottom: 1px dashed rgba(17,24,39,.16);
-}
-.qtyBox{ display:flex; gap:8px; align-items:center; }
-.qtyBtn{
-  width:42px;
-  height:42px;
-  border-radius:14px;
-  border:2px solid rgba(17,24,39,.14);
-  background:#fff;
-  font-weight:1100;
-}
-.qtyInp{
-  width:70px;
-  text-align:center;
-  border:2px solid rgba(17,24,39,.14);
-  border-radius:14px;
-  padding:10px 10px;
-  font-weight:1100;
+  border-radius:var(--r1);
+  border:2px solid var(--line);
   background:#fff;
 }
-
-.prodList{
-  display:grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap:10px;
-  margin-top:10px;
-}
-.prodBtn{
-  border:2px solid rgba(17,24,39,.14);
-  background:#fff;
-  border-radius:16px;
-  padding:10px 10px;
-  font-weight:1100;
-  text-align:left;
-}
-.prodBtn:disabled{ opacity:.55; }
-
-.stickyFoot{
-  position:sticky;
-  bottom:0;
-  background: rgba(255,255,255,.96);
-  padding-top:10px;
+.msg.err{
+  border-color:rgba(255,90,122,.4);
+  background:rgba(255,90,122,.1);
 }
 
 /* =========================
    MOBILE
 ========================= */
-@media (max-width: 520px){
-  .headRow{ flex-wrap:wrap; }
-  .topNav{ width:100%; justify-content:flex-start; }
-  .shopBar{ width:100%; justify-content:flex-start; }
+@media (max-width:520px){
+  .headRow{
+    flex-wrap:wrap;
+    gap:10px;
+  }
 
-  .brandTitle{ font-size: 28px; } /* “太い/でかい”維持 */
-  .lineName{ font-size:16px; }
-  .lineQty{ font-size:15px; }
-  .lineSum{ font-size:16px; }
-  .prodList{ grid-template-columns: 1fr; }
-}
+  .brandTitle{
+    font-size:24px;
+  }
 
-/* reduce motion */
-@media (prefers-reduced-motion: reduce){
-  *{ transition:none !important; }
+  .topNav{
+    width:100%;
+    justify-content:flex-start;
+  }
+
+  .shopBar{
+    width:100%;
+  }
+
+  .toolRow{
+    flex-wrap:wrap;
+  }
+  .toolRight{
+    width:100%;
+    justify-content:flex-start;
+  }
 }
