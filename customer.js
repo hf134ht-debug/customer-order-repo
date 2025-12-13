@@ -133,23 +133,24 @@ function applyDensity_() {
   const grid = qs("#productList");
   if (!grid) return;
 
-  const mode = Number(uiState.density || 1);
+  const mode = Number(uiState.density || 3);
 
   grid.style.display = "grid";
 
-  if (mode === 2) {
+  // 6 = コンパクト（2列）
+  if (mode === 6) {
     grid.style.gridTemplateColumns = "repeat(2, minmax(0, 1fr))";
     grid.style.gap = "10px";
-    grid.classList.add("dense");     // ★追加
+    grid.classList.add("dense");
     document.body.classList.add("isDense");
   } else {
+    // 3 = 標準（1列）
     grid.style.gridTemplateColumns = "minmax(0, 1fr)";
     grid.style.gap = "12px";
-    grid.classList.remove("dense");  // ★追加
+    grid.classList.remove("dense");
     document.body.classList.remove("isDense");
   }
 }
-
 
 function normalize_(s){
   return String(s || "").trim().toLowerCase();
@@ -861,6 +862,7 @@ qs("#btnLoadLast").addEventListener("click", async () => {
   const last = localStorage.getItem(LS_LAST_ORDER_ID) || "";
   qs("#btnLoadLast").style.display = last ? "" : "none";
 })();
+
 
 
 
