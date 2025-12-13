@@ -557,6 +557,70 @@ body{
     justify-content: flex-end; /* 下段右寄せ */
   }
 }
+/* ===== 内訳：左に商品名 / 右に数量+小計（狭い時は右側だけ2段） ===== */
+.card .list{
+  list-style:none !important;
+  padding-left:0 !important;
+  margin: 12px 0 0 !important;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.card .list .lineRow{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+
+  padding: 12px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(15,23,42,.10) !important;
+  background: rgba(255,255,255,.92) !important;
+  box-shadow: 0 10px 18px rgba(15,23,42,.08) !important;
+}
+
+.card .list .lineName{
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align:left;                 /* ★左詰め */
+  font-size: 18px;
+  font-weight: 1000;
+  line-height: 1.15;
+  overflow-wrap:anywhere;
+}
+
+.card .list .lineMeta{
+  flex: 0 0 auto;
+  display:flex;
+  align-items:baseline;
+  justify-content:flex-end;
+  text-align:right;                /* ★右詰め */
+  gap: 12px;
+  min-width: 140px;                /* 右側が安定して揃う */
+}
+
+.card .list .lineQty{
+  font-size: 15px;
+  font-weight: 900;
+  color: rgba(15,23,42,.72);
+}
+
+.card .list .lineSum{
+  font-size: 16px;
+  font-weight: 1100;
+  color: rgba(15,23,42,.86) !important;
+}
+
+/* さらに狭い端末：数量/小計だけ縦にして右寄せ（商品名は左のまま） */
+@media (max-width: 420px){
+  .card .list .lineMeta{
+    flex-direction:column;
+    align-items:flex-end;
+    gap: 4px;
+    min-width: 0;
+  }
+}
 
   </style>
   
@@ -686,6 +750,7 @@ body{
 <link rel="stylesheet" href="./ui_theme.css?v=1">
 </body>
 </html>
+
 
 
 
