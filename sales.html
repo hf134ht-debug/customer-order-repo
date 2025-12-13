@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>売上集計</title>
+
+  <style>
+    body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;margin:14px;}
+    header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
+    nav a{margin-right:10px;text-decoration:none;}
+
+    .wrap{max-width:900px;}
+    .cal-wrap{max-width:560px;}
+    .cal-head{display:flex;justify-content:space-between;align-items:center;margin:10px 0;}
+    .cal-head button{padding:6px 12px;cursor:pointer;border-radius:10px;border:1px solid #bbb;background:#fff;}
+    .cal-title{font-weight:900;font-size:18px;}
+
+    .legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:12px;opacity:.9;margin:6px 0 10px;}
+    .lg{display:flex;gap:6px;align-items:center;}
+    .sw{width:14px;height:14px;border-radius:4px;border:1px solid #aaa;background:#fff;}
+    .sw.has{background:#ffe8c7;border-color:#f59e0b;}
+    .sw.sel{background:#c7ffd6;border-color:#24b24a;}
+    .sw.off{background:#f3f3f3;border-color:#ddd;}
+
+    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+    .dow{font-size:12px;opacity:.7;text-align:center;}
+
+    .day{
+      height:52px;border:1px solid #ddd;border-radius:12px;
+      display:flex;align-items:center;justify-content:center;
+      cursor:pointer; user-select:none;
+      background:#fff;
+      position:relative;
+      font-weight:700;
+    }
+    .day.off{opacity:.45;cursor:default;background:#f3f3f3;}
+    .day.has{background:#ffe8c7;border-color:#f59e0b;border-width:2px;}
+    .day.sel{background:#c7ffd6;border-color:#24b24a;border-width:2px;}
+    .dot{
+      position:absolute; bottom:6px;
+      width:8px;height:8px;border-radius:50%;
+      background:#f59e0b;
+    }
+    .day.sel .dot{ background:#16a34a; }
+
+    .picked{font-size:12px;opacity:.85;margin-top:4px;}
+    .msg{color:#c00;margin:8px 0;}
+
+    .cards{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+    .card{
+      border:1px solid #ddd;border-radius:14px;padding:10px;background:#fff;
+      min-width:180px;
+    }
+    .k{font-size:12px;opacity:.75;}
+    .v{font-size:22px;font-weight:900;margin-top:4px;}
+
+    .box{margin-top:14px;border:1px solid #ddd;border-radius:14px;padding:10px;background:#fff;}
+    .row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:6px 0;border-bottom:1px dashed #eee;}
+    .row:last-child{border-bottom:none;}
+    .sub{font-size:12px;opacity:.75;}
+  </style>
+
+  <script>
+    window.GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzeeGTJKZXHsVEw8DMz_QahMsnbqAUzDM3D_9mnv1LpVRxIitpL0F3xlCTwKUjV0OURzQ/exec";
+  </script>
+</head>
+<body>
+  <header>
+    <h2>売上集計</h2>
+    <nav>
+      <a href="./staff_handoff.html">受け渡し</a>
+      <a href="./history.html">履歴</a>
+      <a href="./sales.html">売上</a>
+    </nav>
+  </header>
+
+  <div class="wrap">
+    <div class="cal-wrap">
+      <div class="cal-head">
+        <button id="prevMonth">←</button>
+        <div class="cal-title" id="calTitle"></div>
+        <button id="nextMonth">→</button>
+      </div>
+
+      <div class="legend">
+        <div class="lg"><span class="sw has"></span>売上あり</div>
+        <div class="lg"><span class="sw sel"></span>選択中</div>
+        <div class="lg"><span class="sw off"></span>月外</div>
+      </div>
+
+      <div class="cal-grid" id="calDow"></div>
+      <div class="cal-grid" id="calGrid"></div>
+
+      <div class="picked" id="pickedLabel"></div>
+      <div class="msg" id="msg"></div>
+    </div>
+
+    <div class="cards" id="cards"></div>
+
+    <div class="box">
+      <div style="font-weight:900;margin-bottom:6px;">商品別内訳</div>
+      <div class="sub">数量 / 売上（上位から表示）</div>
+      <div id="breakdown"></div>
+    </div>
+  </div>
+
+  <script src="./sales.js"></script>
+  <script>document.body.insertAdjacentHTML("beforeend","<div style='opacity:.6;font-size:12px;margin-top:10px;'>sales.html loaded</div>");</script>
+</body>
+</html>
