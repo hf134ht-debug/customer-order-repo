@@ -343,6 +343,79 @@ body{
   font-weight: 900;
 }
 
+/* ===== item lines (bigger & stylish) ===== */
+.card .list{
+  list-style:none !important;
+  padding-left:0 !important;
+  margin: 12px 0 0 !important;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.card .list .lineRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+
+  padding: 12px 12px;
+  border-radius: 16px;
+
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.05);
+  box-shadow: 0 8px 18px rgba(0,0,0,.18);
+}
+
+.card .list .lineName{
+  font-size: 18px;         /* ★商品名 大きく */
+  font-weight: 1000;
+  letter-spacing: .2px;
+}
+
+.card .list .lineMeta{
+  display:flex;
+  align-items:baseline;
+  gap:12px;
+  flex: 0 0 auto;
+}
+
+.card .list .lineQty{
+  font-size: 17px;         /* ★数量 大きく */
+  font-weight: 1000;
+  opacity: .90;
+}
+
+.card .list .lineSum{
+  font-size: 18px;         /* ★小計 大きく */
+  font-weight: 1100;
+  background: linear-gradient(90deg, var(--neon1), var(--neon2));
+  -webkit-background-clip:text;
+  background-clip:text;
+  color: transparent;
+}
+
+.card .list .lineEmpty{
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px dashed rgba(255,255,255,.18);
+  color: rgba(255,255,255,.70);
+}
+
+/* ===== make shop state readable on dark header ===== */
+#shopBar .badge-open,
+#shopBar .badge-close{
+  color: rgba(255,255,255,.92) !important;
+}
+
+#btnToggleShop{
+  color: #fff !important;
+}
+
+/* ボタン内の文字が薄い場合の保険 */
+#btnToggleShop.btn-close{ color:#fff !important; }
+#btnToggleShop.btn-open{  color:#fff !important; }
+
   </style>
 
   <link rel="stylesheet" href="./ui_dark.css?v=2">
@@ -471,6 +544,7 @@ body{
 <script src="./ui.js?v=1"></script>
 </body>
 </html>
+
 
 
 
