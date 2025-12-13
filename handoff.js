@@ -12,6 +12,32 @@ const qs = (s, el=document) => el.querySelector(s);
 const yen = (n) => "¥" + (Number(n||0)).toLocaleString("ja-JP");
 const escapeHtml = (s)=>String(s ?? "").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 
+function buildLinesHtml(items) {
+  const arr = Array.isArray(items) ? items : [];
+  if (!arr.length) return `<li class="lineEmpty">（内訳なし）</li>`;
+
+  return arr.map(it => {
+    const name = escapeHtml(it.product_name_at_sale || it.product_name || it.name || it.product_id || "");
+    const qty = Number(it.qty || 0);
+    const unit = Number(it.unit_price || it.price || 0);
+    const lineTotal = Number(
+      it.line_total != null ? it.line_total :
+      it.subtotal != null ? it.subtotal :
+      (qty * unit)
+    );
+
+    return `
+      <li class="lineRow">
+        <span class="lineName">${name}</span>
+        <span class="lineMeta">
+          <span class="lineQty">× ${qty}</span>
+          <span class="lineSum">${yen(lineTotal)}</span>
+        </span>
+      </li>
+    `;
+  }).join("");
+}
+
 function setMsg(type, text) {
   const area = qs("#msgArea");
   if (!text) { area.innerHTML = ""; return; }
@@ -167,10 +193,8 @@ function renderCard(o, compact, isRankMode, index) {
   el.className = "card" + (compact ? " compact" : "");
   el.dataset.orderId = o.order_id;
 
-  const items = Array.isArray(o.items) ? o.items : [];
-   const lines = buildLinesHtml(o.items);
-    ? items.map(it => `<li>${escapeHtml(it.product_name_at_sale)} × ${Number(it.qty||0)}（${yen(Number(it.line_total||0))}）</li>`).join("")
-    : `<li class="muted">内訳がありません（データ不整合）</li>`;
+   const items = Array.isArray(o.items) ? o.items : [];
+   const lines = buildLinesHtml(items);
 
   const lockNote = (String(o.lock_state||"") === "staff_edit")
     ? `<div class="muted"><span class="dangerText">編集中</span>（別端末の可能性）</div>`
@@ -633,6 +657,7 @@ async function initShopToggle_(){
 document.addEventListener("DOMContentLoaded", () => {
   initShopToggle_();
 });
+
 
 
 
