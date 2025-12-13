@@ -1419,4 +1419,19 @@ header{
   color:#fff;
 }
 
+/* コンパクト時：詳細を開いたカードは2列ぶん使う（ズレ防止） */
+#productList.dense .itemCard.detailOpen{
+  grid-column: 1 / -1;
+}
 
+/* 詳細パネルのはみ出し防止（画像・iframe対策） */
+.itemCard .detailPanel{
+  overflow: hidden;
+}
+
+.itemCard .detailPanel img,
+.itemCard .detailPanel iframe{
+  max-width: 100%;
+  width: 100%;
+  display: block;
+}
