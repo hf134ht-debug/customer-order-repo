@@ -1435,3 +1435,32 @@ header{
   width: 100%;
   display: block;
 }
+
+/* ===== Order Counter: product grid fix ===== */
+#productList{
+  display: grid !important;              /* ← .grid の flex を殺す */
+  grid-template-columns: 1fr;            /* 標準：1列 */
+  gap: 12px;
+}
+
+#productList.dense{
+  grid-template-columns: repeat(2, minmax(0, 1fr)); /* コンパクト：2列 */
+  gap: 10px;
+}
+
+/* コンパクト時：詳細を開いたカードは2列ぶん使う（ズレ防止） */
+#productList.dense .itemCard.detailOpen{
+  grid-column: 1 / -1;
+}
+
+/* 詳細のはみ出し防止 */
+.itemCard .detailPanel{
+  overflow: hidden;
+}
+.itemCard .detailPanel img,
+.itemCard .detailPanel iframe{
+  max-width: 100%;
+  width: 100%;
+  display: block;
+}
+
