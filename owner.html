@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>設定（オーナー）</title>
+
+  <style>
+    body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;margin:14px;}
+    header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
+    nav a{margin-right:10px;text-decoration:none;}
+
+    .wrap{max-width:980px;}
+    .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0;}
+    button{padding:8px 12px;border:1px solid #bbb;border-radius:10px;background:#fff;cursor:pointer;}
+    .msg{margin:8px 0;color:#c00;}
+
+    table{width:100%;border-collapse:collapse;margin-top:10px;}
+    th,td{border-bottom:1px solid #eee;padding:8px;vertical-align:top;}
+    th{font-size:12px;opacity:.75;text-align:left;}
+    input{padding:6px;border:1px solid #ddd;border-radius:8px;width:100%;}
+    .w80{width:80px;}
+    .w120{width:120px;}
+    .w160{width:160px;}
+    .rowbtn{display:flex;gap:8px;flex-wrap:wrap;}
+    .pill{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid #bbb;}
+    .pill.on{background:#ffe8c7;border-color:#f59e0b;}
+    .pill.off{background:#dbffe5;border-color:#1faa59;}
+    .small{font-size:12px;opacity:.8;}
+    .card{border:1px solid #ddd;border-radius:14px;padding:10px;background:#fff;margin-top:14px;}
+    .grid{display:grid;grid-template-columns:160px 1fr;gap:8px;align-items:center;}
+  </style>
+
+  <script>
+    window.GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzeeGTJKZXHsVEw8DMz_QahMsnbqAUzDM3D_9mnv1LpVRxIitpL0F3xlCTwKUjV0OURzQ/exec";
+  </script>
+</head>
+<body>
+  <header>
+    <h2>設定（オーナー）</h2>
+    <nav>
+      <a href="./staff_handoff.html">受け渡し</a>
+      <a href="./history.html">履歴</a>
+      <a href="./sales.html">売上</a>
+      <a href="./owner.html">設定</a>
+    </nav>
+  </header>
+
+  <div class="wrap">
+    <div class="bar">
+      <button id="btnReload">再読込</button>
+      <button id="btnResetSoldOut">売切を全解除</button>
+      <span class="small">※ 価格・売切・表示順の編集ができます</span>
+    </div>
+
+    <div id="msg" class="msg"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th class="w120">商品ID</th>
+          <th>商品名</th>
+          <th class="w120">価格</th>
+          <th class="w120">表示順</th>
+          <th class="w120">売切</th>
+          <th class="w160">操作</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+
+    <div class="card">
+      <div style="font-weight:900;margin-bottom:8px;">商品追加 / 更新</div>
+      <div class="grid">
+        <div>商品ID（必須）</div><input id="add_id" placeholder="例: P010">
+        <div>商品名</div><input id="add_name" placeholder="例: トルネードポテト（塩）">
+        <div>価格</div><input id="add_price" type="number" placeholder="例: 500">
+        <div>表示順</div><input id="add_sort" type="number" placeholder="例: 10">
+      </div>
+      <div class="bar" style="margin-top:10px;">
+        <button id="btnAdd">保存（追加/更新）</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./owner.js"></script>
+</body>
+</html>
