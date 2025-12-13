@@ -1274,4 +1274,70 @@ header{
   border-color: rgba(51,209,122,.80) !important;
 }
 
+/* =========================================================
+   SALES minimal styles (keep functionality)
+========================================================= */
+
+/* sales の cards レイアウト */
+.salesCards.cards{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+/* sales.js が生成する .card を “統一カード” に寄せる
+   （ui.css に .card が既にあるので、ここは微調整だけ） */
+.salesCards .card{
+  min-width: 180px;
+}
+
+/* “期間集計” 内の行レイアウト */
+.salesRangeRow{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:flex-end;
+}
+
+/* From/To の小ブロック */
+.salesDateBox{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+/* 見出しラベル */
+.salesLabel{
+  font-weight: var(--fw);
+  color: var(--ink);
+}
+
+/* sales.js の k/v タイポ */
+.k{ font-size:12px; opacity:.75; color: var(--muted); }
+.v{ font-size:22px; font-weight:1100; margin-top:4px; }
+
+/* sales.js の row/sub（商品別内訳・ランキング） */
+.sub{ font-size:12px; opacity:.75; color: var(--muted); }
+.row{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:center;
+  padding:8px 0;
+  border-bottom: 1px dashed rgba(17,24,39,.12);
+}
+.row:last-child{ border-bottom:none; }
+
+/* sales カレンダーの色（売上あり＝オレンジ系） */
+.salesLegend .sw.has{
+  background: rgba(245,158,11,.22);
+  border-color: rgba(245,158,11,.70);
+}
+#calGrid .dot{
+  background: rgba(245,158,11,.95);
+}
+#calGrid .day.sel .dot{
+  background: rgba(22,163,74,.95);
+}
+
 
