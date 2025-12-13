@@ -621,6 +621,66 @@ body{
     min-width: 0;
   }
 }
+/* ===== 内訳行：2枚目の配置に固定（左=商品名 / 右=×数量 + 小計） ===== */
+.card .list{
+  list-style:none !important;
+  padding-left:0 !important;
+  margin: 12px 0 0 !important;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.card .list .lineRow{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  flex-wrap:nowrap !important;          /* ★同一行固定 */
+  gap:12px !important;
+
+  padding: 12px 12px !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(15,23,42,.10) !important;
+  background: rgba(255,255,255,.92) !important;
+  box-shadow: 0 10px 18px rgba(15,23,42,.08) !important;
+}
+
+.card .list .lineName{
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  text-align:left !important;
+  font-size: 18px !important;
+  font-weight: 1000 !important;
+  line-height: 1.15;
+
+  /* ★右側を守るため：長い商品名は省略（2枚目の見た目に近い） */
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.card .list .lineMeta{
+  flex: 0 0 auto !important;
+  display:flex !important;
+  align-items:baseline !important;
+  justify-content:flex-end !important;
+  gap: 12px !important;
+
+  white-space: nowrap !important;       /* ★×数量と小計は折り返さない */
+  text-align:right !important;
+}
+
+.card .list .lineQty{
+  font-size: 16px !important;
+  font-weight: 900 !important;
+  color: rgba(15,23,42,.70) !important;
+}
+
+.card .list .lineSum{
+  font-size: 16px !important;
+  font-weight: 1100 !important;
+  color: rgba(15,23,42,.86) !important;
+}
 
   </style>
   
@@ -750,6 +810,7 @@ body{
 <link rel="stylesheet" href="./ui_theme.css?v=1">
 </body>
 </html>
+
 
 
 
