@@ -464,6 +464,99 @@ body{
   border-color: rgba(255,255,255,.18) !important;
 }
 
+    /* ===== Page background (light, not competing with header) ===== */
+body{
+  /* ヘッダはそのまま、下地だけ少し色を入れてカードを浮かせる */
+  background:
+    radial-gradient(900px 520px at 18% 10%, rgba(34,211,238,.12), transparent 60%),
+    radial-gradient(900px 520px at 86% 26%, rgba(168,85,247,.10), transparent 60%),
+    radial-gradient(820px 520px at 40% 105%, rgba(34,197,94,.08), transparent 60%),
+    #f5f7fb;
+}
+
+/* ===== Card: more "floating" + stylish ===== */
+.card{
+  background: linear-gradient(180deg, #ffffff, #fbfcff) !important;
+  border: 4px solid rgba(34,211,238,.28) !important;   /* 外枠：うるさくないシアン */
+  border-radius: 22px !important;
+  box-shadow:
+    0 18px 50px rgba(15, 23, 42, .14),
+    0 10px 22px rgba(15, 23, 42, .10) !important;
+  padding: 16px !important;
+}
+
+/* 内枠（2重目）も太く＆薄めに */
+.card::before{
+  content:"";
+  position:absolute;
+  inset: 8px;
+  border-radius: 18px;
+  border: 3px solid rgba(168,85,247,.18);  /* 内枠：薄いパープルで“夜市感” */
+  pointer-events:none;
+}
+
+/* ほんの少しだけ“持ち上がる” */
+.card:hover{
+  transform: translateY(-1px);
+  box-shadow:
+    0 22px 64px rgba(15, 23, 42, .18),
+    0 12px 26px rgba(15, 23, 42, .12) !important;
+}
+
+/* ===== 内訳行：金額が白くて見えない問題を修正 ===== */
+.card .list .lineSum{
+  background: none !important;
+  color: rgba(15, 23, 42, .82) !important; /* うるさくない“締まった黒寄り” */
+  text-shadow: none !important;
+}
+
+/* 内訳の行自体も少し濃くしてカード内で映えるように */
+.card .list .lineRow{
+  border: 2px solid rgba(15, 23, 42, .10) !important;
+  background: rgba(255,255,255,.86) !important;
+  box-shadow: 0 10px 18px rgba(15, 23, 42, .10) !important;
+}
+
+/* ===== スマホで商品名〜数量が収まらない問題を修正 ===== */
+.card .list .lineRow{
+  display:flex;
+  flex-wrap: wrap;            /* ★折り返し許可 */
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.card .list .lineName{
+  flex: 1 1 240px;            /* ★名前は伸びてOK */
+  min-width: 0;               /* ★これが無いと折り返しが効きにくい */
+  white-space: normal;
+  overflow-wrap: anywhere;    /* ★長い商品名でも崩れない */
+}
+
+.card .list .lineMeta{
+  flex: 0 0 auto;
+  display:flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-left: auto;          /* 右寄せ */
+}
+
+/* さらに狭い端末では、数量/金額を下段に落として整える */
+@media (max-width: 420px){
+  .card .list .lineName{
+    font-size: 16px !important;
+  }
+  .card .list .lineQty{
+    font-size: 15px !important;
+  }
+  .card .list .lineSum{
+    font-size: 16px !important;
+  }
+  .card .list .lineMeta{
+    width: 100%;
+    justify-content: flex-end; /* 下段右寄せ */
+  }
+}
+
   </style>
 
   <link rel="stylesheet" href="./ui_dark.css?v=2">
@@ -592,3 +685,4 @@ body{
 <script src="./ui.js?v=1"></script>
 </body>
 </html>
+
