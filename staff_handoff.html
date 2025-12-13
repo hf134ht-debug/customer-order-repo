@@ -287,9 +287,119 @@
   .card .list .lineRow{ display:flex !important; } /* ui_theme の grid を潰す */
 }
 </style>
+<style>
+/* =========================
+   HOTFIX v1 (staff_handoff)
+   - スマホ内訳が消える問題
+   - 太字が戻る問題
+   - ヘッダー見にくい/縦崩れを以前の見た目に寄せる
+========================= */
+
+/* ---- typography（太字を戻す） ---- */
+.name, .price,
+.card b,
+.card .list .lineName,
+.card .list .lineQty,
+.card .list .lineSum,
+.navItem,
+.badge-open, .badge-close,
+#btnToggleShop,
+.btn{
+  font-weight: 1000 !important;
+}
+
+/* ---- items（スマホで商品名が消えるのを殺す） ---- */
+.card .list .lineRow{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  flex-direction:row !important;
+  flex-wrap:nowrap !important;
+}
+.card .list .lineName{
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  color:#111 !important;                 /* ← “見えない”対策（最重要） */
+  text-align:left !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+}
+.card .list .lineMeta{
+  flex: 0 0 auto !important;
+  display:flex !important;
+  align-items:baseline !important;
+  justify-content:flex-end !important;
+  gap: 12px !important;
+  white-space:nowrap !important;
+}
+.card .list .lineQty,
+.card .list .lineSum{
+  color:#111 !important;
+}
+
+/* ---- header（スマホで縦に崩れるのを防ぐ / 見やすくする） ---- */
+header.appHeader{
+  background: #51565f !important; /* 以前の見た目寄せ：渋いグレー */
+  border-bottom: 1px solid rgba(255,255,255,.20) !important;
+}
+.headRow{
+  flex-wrap:wrap !important;          /* 2段構成OK */
+  align-items:center !important;
+  gap:12px !important;
+}
+
+/* ロゴは左、ナビは横スクロール（縦積み禁止） */
+.brandTitle{
+  font-size: 30px !important;
+  line-height:1 !important;
+}
+.topNav{
+  width:100% !important;
+  flex-wrap:nowrap !important;        /* ←縦積み禁止 */
+  overflow-x:auto !important;
+  white-space:nowrap !important;
+  gap:10px !important;
+  padding-bottom:4px !important;
+}
+.navItem{
+  flex: 0 0 auto !important;
+}
+
+/* 受付状態＋閉店ボタンは横に並べて見やすく */
+.shopBar{
+  width:100% !important;
+  justify-content:flex-end !important;
+  flex-wrap:nowrap !important;
+  gap:10px !important;
+  overflow-x:auto !important;
+}
+.badge-open, .badge-close{
+  color:#fff !important;
+  background: rgba(0,0,0,.18) !important;
+  border: 2px solid rgba(255,255,255,.28) !important;
+}
+
+/* ツール列（件数/更新/自動更新）も横並び維持 */
+.toolRow{
+  flex-wrap:wrap !important;
+}
+.toolRight{
+  width:100% !important;
+  justify-content:flex-start !important;
+  flex-wrap:nowrap !important;
+  overflow-x:auto !important;
+  white-space:nowrap !important;
+}
+
+/* モバイルでも ui_dark.css の input{width:100%} を潰す */
+.toolRight select,
+.toolRight button,
+.toolLeft .pill{
+  width:auto !important;
+  flex: 0 0 auto !important;
+}
+</style>
 
 </body>
 </html>
-
-
-
