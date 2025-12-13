@@ -14,6 +14,12 @@
     span.addEventListener("animationend", ()=> span.remove(), { once:true });
   }
 
+  // ui.js 内のナビクリック処理の先頭に追加
+if (window.IS_CUSTOMER_PAGE) {
+  // customerでは画面遷移させない
+  return;
+}
+
   function isTarget(el){
     if (!el) return false;
     if (el.closest("button")) return true;
@@ -33,3 +39,4 @@
     addRipple(el, ev.clientX, ev.clientY);
   }, { passive:true });
 })();
+
