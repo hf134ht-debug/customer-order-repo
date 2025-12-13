@@ -153,6 +153,160 @@ async function loadMonthAndRender(keepSelected){
     $("msg").textContent = "カレンダー取得エラー: " + e.message;
   }
 }
+let rangeData = null;
+let rangeSort = "sales"; // "sales" or "qty"
+
+function startOfWeek(d){
+  const x = new Date(d);
+  const day = x.getDay(); // 0..6
+  x.setDate(x.getDate() - day); // 日曜始まり（必要なら月曜始まりに変えます）
+  x.setHours(0,0,0,0);
+  return x;
+}
+function endOfWeek(d){
+  const s = startOfWeek(d);
+  const e = new Date(s);
+  e.setDate(e.getDate()+6);
+  e.setHours(0,0,0,0);
+  return e;
+}
+function startOfMonth(d){
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+function endOfMonth(d){
+  return new Date(d.getFullYear(), d.getMonth()+1, 0);
+}
+
+async function loadSalesRange(from, to){
+  $("msg").textContent = "";
+  const url = new URL(GAS_WEB_APP_URL);
+  url.searchParams.set("mode","getSalesRange");
+  url.searchParams.set("from", from);
+  url.searchParams.set("to", to);
+
+  const res = await fetch(url.toString());
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || "getSalesRange failed");
+
+  rangeData = json;
+  renderRange();
+}
+
+function renderRange(){
+  if(!rangeData){
+    $("rangeSummary").textContent = "";
+    $("rangeRanking").textContent = "";
+    return;
+  }
+
+  const s = rangeData.summary;
+  $("rangeSummary").innerHTML = `
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <div class="card"><div class="k">合計売上</div><div class="v">¥${Number(s.total_sales||0).toLocaleString()}</div></div>
+      <div class="card"><div class="k">注文数</div><div class="v">${Number(s.order_count||0).toLocaleString()}件</div></div>
+      <div class="card"><div class="k">平均客単価</div><div class="v">¥${Math.round(Number(s.avg_order_value||0)).toLocaleString()}</div></div>
+    </div>
+  `;
+
+  const arr = (rangeData.product_breakdown || []).map(x=>({
+    name: x.name,
+    qty: Number(x.qty||0),
+    sales: Number(x.sales||0)
+  }));
+
+  arr.sort((a,b)=>{
+    if(rangeSort==="qty") return (b.qty-a.qty) || (b.sales-a.sales) || a.name.localeCompare(b.name);
+    return (b.sales-a.sales) || (b.qty-a.qty) || a.name.localeCompare(b.name);
+  });
+
+  $("rangeRanking").innerHTML = `
+    <div class="row" style="font-weight:900;">
+      <div>商品名</div>
+      <div style="display:flex;gap:18px;">
+        <span>数量</span>
+        <span>売上</span>
+      </div>
+    </div>
+    ${arr.map(x=>`
+      <div class="row">
+        <div style="font-weight:800;">${escapeHtml(x.name)}</div>
+        <div style="display:flex;gap:18px;font-weight:900;">
+          <span>${x.qty.toLocaleString()}</span>
+          <span>¥${x.sales.toLocaleString()}</span>
+        </div>
+      </div>
+    `).join("")}
+  `;
+}
+
+function buildTSV_(){
+  if(!rangeData) return "";
+  const from = rangeData.from;
+  const to = rangeData.to;
+
+  const arr = (rangeData.product_breakdown || []).map(x=>({
+    name: x.name,
+    qty: Number(x.qty||0),
+    sales: Number(x.sales||0)
+  }));
+
+  arr.sort((a,b)=>{
+    if(rangeSort==="qty") return (b.qty-a.qty) || (b.sales-a.sales) || a.name.localeCompare(b.name);
+    return (b.sales-a.sales) || (b.qty-a.qty) || a.name.localeCompare(b.name);
+  });
+
+  const lines = [];
+  lines.push(`期間\t${from}\t${to}`);
+  lines.push(`商品名\t数量\t売上`);
+  arr.forEach(x=>{
+    lines.push(`${x.name}\t${x.qty}\t${x.sales}`);
+  });
+  return lines.join("\n");
+}
+
+async function copyTSV_(){
+  const tsv = buildTSV_();
+  if(!tsv){ alert("期間集計データがありません"); return; }
+  await navigator.clipboard.writeText(tsv);
+  alert("コピーしました（Sheetsに貼り付けできます）");
+}
+
+// DOMContentLoaded 内に追記してボタン配線
+document.addEventListener("DOMContentLoaded", () => {
+  const now = new Date();
+
+  const btnW = document.getElementById("btnThisWeek");
+  const btnM = document.getElementById("btnThisMonth");
+  const btnA = document.getElementById("btnApplyRange");
+  const sortS = document.getElementById("sortBySales");
+  const sortQ = document.getElementById("sortByQty");
+  const btnC = document.getElementById("btnCopyTSV");
+
+  if (btnW) btnW.addEventListener("click", async ()=>{
+    const s = startOfWeek(now), e = endOfWeek(now);
+    const from = ymd(s), to = ymd(e);
+    $("rangeFrom").value = from; $("rangeTo").value = to;
+    await loadSalesRange(from,to); 
+  });
+
+  if (btnM) btnM.addEventListener("click", async ()=>{
+    const s = startOfMonth(now), e = endOfMonth(now);
+    const from = ymd(s), to = ymd(e);
+    $("rangeFrom").value = from; $("rangeTo").value = to;
+    await loadSalesRange(from,to);
+  });
+
+  if (btnA) btnA.addEventListener("click", async ()=>{
+    const from = $("rangeFrom").value;
+    const to = $("rangeTo").value;
+    if(!from || !to){ alert("From/Toを選んでください"); return; }
+    await loadSalesRange(from,to);
+  });
+
+  if (sortS) sortS.addEventListener("click", ()=>{ rangeSort="sales"; renderRange(); });
+  if (sortQ) sortQ.addEventListener("click", ()=>{ rangeSort="qty"; renderRange(); });
+  if (btnC) btnC.addEventListener("click", copyTSV_);
+});
 
 document.addEventListener("DOMContentLoaded", async () => {
   const now = new Date();
@@ -176,4 +330,5 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await loadMonthAndRender(true);
   await loadDaySales(ymd(selectedDay));
+
 });
