@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>店員用 受け渡し</title>
+  <title>SERVE STATION</title>
   <style>
     :root{ --bg:#f7f7fb; --card:#fff; --line:#e8e8ef; --text:#111; --muted:#666; --danger:#c0392b; --ok:#1e824c; --shadow:0 10px 30px rgba(0,0,0,.06); }
     body{ margin:0; font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif; background:var(--bg); color:var(--text); }
@@ -97,61 +97,207 @@
   .ctrls{ width:100%; justify-content:flex-start; }
 }
 
+    /* ===== POP x STYLISH THEME (staff) ===== */
+:root{
+  --bg: #f6f7fb;
+  --ink:#101828;
+  --muted:#667085;
+  --line: rgba(16,24,40,.10);
+  --card:#ffffff;
+
+  --accent:#6d28d9;     /* 紫 */
+  --accent2:#2563eb;    /* 青 */
+  --ok:#16a34a;
+  --danger:#ef4444;
+
+  --shadow: 0 14px 35px rgba(16,24,40,.10);
+  --shadow2: 0 8px 18px rgba(16,24,40,.08);
+}
+
+/* 背景：抽象で軽い（写真なし） */
+body{
+  background:
+    radial-gradient(1000px 700px at 10% -10%, rgba(109,40,217,.16), transparent 60%),
+    radial-gradient(900px 600px at 110% 10%, rgba(37,99,235,.14), transparent 55%),
+    radial-gradient(900px 600px at 30% 120%, rgba(34,197,94,.10), transparent 55%),
+    var(--bg);
+  color: var(--ink);
+}
+
+/* ヘッダ：ぼかしをやめて軽く＆シャープに */
+header.appHeader{
+  background: rgba(246,247,251,.95);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: none; /* ★重さ対策 */
+}
+
+.headRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding: 10px 12px;
+}
+
+.brandTitle{
+  font-weight: 1000;
+  letter-spacing: .5px;
+  font-size: 18px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.brandSub{ font-size:12px; color: var(--muted); margin-top:2px; }
+
+.topNav{
+  display:flex; gap:8px; align-items:center;
+}
+.navItem{
+  display:inline-flex;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.85);
+  font-weight: 900;
+  color: var(--ink);
+  transition: transform .06s ease, background .12s ease, border-color .12s ease;
+}
+.navItem:hover{ background:#fff; border-color: rgba(16,24,40,.18); }
+.navItem:active{ transform: scale(.98); }
+.navItem.active{
+  border-color: rgba(109,40,217,.35);
+  box-shadow: 0 0 0 3px rgba(109,40,217,.10);
+}
+
+.shopBar{ display:flex; gap:10px; align-items:center; }
+.badge-open,.badge-close{
+  display:inline-flex; align-items:center; gap:8px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.85);
+  font-weight: 1000;
+}
+.badge-open{ border-color: rgba(22,163,74,.25); background: rgba(22,163,74,.08); }
+.badge-close{ border-color: rgba(239,68,68,.25); background: rgba(239,68,68,.08); }
+.dot-open,.dot-close{ width:10px; height:10px; border-radius:50%; }
+.dot-open{ background: var(--ok); }
+.dot-close{ background: var(--danger); }
+
+/* ツール列：横スクロールで“詰めて格好よく” */
+.toolRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding: 6px 12px 10px;
+}
+.toolRight{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:nowrap;
+  overflow-x:auto;
+  white-space:nowrap;
+  padding-bottom: 4px;
+}
+.toolRight select,
+.toolRight button,
+.toolLeft .pill{
+  width:auto !important;
+  flex: 0 0 auto;
+}
+
+/* カード：ポップさ（影・輪郭・ほんの少し浮く） */
+.card{
+  border-radius: 18px;
+  border: 1px solid rgba(16,24,40,.10);
+  box-shadow: var(--shadow);
+}
+.card:hover{ box-shadow: 0 18px 45px rgba(16,24,40,.14); }
+
+.btn{
+  border: 1px solid rgba(16,24,40,.12);
+  background: rgba(255,255,255,.92);
+  font-weight: 1000;
+}
+.btnPrimary{
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-color: transparent;
+  color:#fff;
+}
+.btn-close{ background: rgba(239,68,68,.10); border-color: rgba(239,68,68,.28); }
+.btn-open{ background: rgba(22,163,74,.10); border-color: rgba(22,163,74,.28); }
+
+/* スマホ：ブランドとナビは折り返し */
+@media (max-width: 720px){
+  .headRow{ flex-wrap:wrap; }
+  .topNav{ width:100%; }
+}
+
   </style>
 
   <link rel="stylesheet" href="./ui_dark.css?v=2">
 </head>
 <body>
-<header>
-  <div id="shopBar" class="topbar">
-  <div class="topbar-left">
-    <span id="shopState" class="badge-open">
-      <span class="dot-open"></span><span>受付：営業中</span>
-    </span>
-  </div>
-
-  <div class="topbar-right">
-    <button id="btnToggleShop" class="btn btn-close">閉店（受付停止）</button>
-  </div>
-</div>
-
-  <div class="wrap">
-    <div class="topbar">
-      <div>
-        <div class="title">店員用 受け渡し</div>
-        <div class="muted">pending を表示。カードタップで編集（数量変更・品目追加）→ 保存 / 完了 / キャンセル。</div>
-      </div>
-
-      <div class="ctrls">
-        <span class="pill" id="countPill">0件</span>
-
-        <select id="viewMode">
-          <option value="3">通常（3件）</option>
-          <option value="6">コンパクト（6件）</option>
-        </select>
-
-        <select id="sortMode">
-          <option value="created">受付順</option>
-          <option value="elapsed_desc">経過長い順</option>
-          <option value="rank">手動順（並び替え）</option>
-        </select>
-
-        <select id="filterMode">
-          <option value="">フィルタ：全て</option>
-        </select>
-
-        <button class="btn" id="btnRefresh">更新</button>
-
-        <select id="autoInterval">
-          <option value="10">自動 10秒</option>
-          <option value="30" selected>自動 30秒</option>
-          <option value="60">自動 60秒</option>
-        </select>
-
-        <button class="btn btnPrimary" id="btnAuto">自動更新：OFF</button>
-      </div>
+<header class="appHeader">
+  <div class="wrap headRow">
+    <div class="brand">
+      <div class="brandTitle">HANDOFF DESK</div>
+      <div class="brandSub">pending を編集 → 保存 / 完了 / キャンセル</div>
     </div>
 
+    <nav class="topNav">
+      <a href="./staff_handoff.html" class="navItem active">受け渡し</a>
+      <a href="./history.html" class="navItem">履歴</a>
+      <a href="./sales.html" class="navItem">売上</a>
+      <a href="./owner.html" class="navItem">設定</a>
+    </nav>
+
+    <div id="shopBar" class="shopBar">
+      <span id="shopState" class="badge-open">
+        <span class="dot-open"></span><span>受付：営業中</span>
+      </span>
+      <button id="btnToggleShop" class="btn btn-close">閉店（受付停止）</button>
+    </div>
+  </div>
+
+  <div class="wrap toolRow">
+    <div class="toolLeft">
+      <span class="pill" id="countPill">0件</span>
+    </div>
+
+    <div class="ctrls toolRight">
+      <select id="viewMode">
+        <option value="3">通常（3件）</option>
+        <option value="6">コンパクト（6件）</option>
+      </select>
+
+      <select id="sortMode">
+        <option value="created">受付順</option>
+        <option value="elapsed_desc">経過長い順</option>
+        <option value="rank">手動順</option>
+      </select>
+
+      <select id="filterMode">
+        <option value="">フィルタ：全て</option>
+      </select>
+
+      <button class="btn" id="btnRefresh">更新</button>
+
+      <select id="autoInterval">
+        <option value="10">自動 10秒</option>
+        <option value="30" selected>自動 30秒</option>
+        <option value="60">自動 60秒</option>
+      </select>
+
+      <button class="btn btnPrimary" id="btnAuto">自動更新：OFF</button>
+    </div>
+  </div>
+
+  <div class="wrap">
     <div id="msgArea"></div>
   </div>
 </header>
@@ -220,5 +366,6 @@
 <script src="./ui.js?v=1"></script>
 </body>
 </html>
+
 
 
