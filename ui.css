@@ -513,3 +513,59 @@ summary{ cursor:pointer; font-weight:1100; }
   gap:10px;
 }
 
+/* =========================
+   MOBILE FIX: 商品名は全文表示 / 右側は横並び・右詰め
+========================= */
+@media (max-width: 520px){
+
+  .lineRow{
+    display:grid !important;
+    grid-template-columns: 1fr auto !important;
+    align-items:start !important;
+    gap: 6px 10px !important;
+  }
+
+  /* 商品名：省略しない・改行OK */
+  .lineName{
+    white-space: normal !important;     /* 折り返す */
+    overflow: visible !important;
+    text-overflow: clip !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+
+    font-size: 15px !important;
+    line-height: 1.25 !important;
+
+    /* Safari文字消失対策 */
+    color:#111 !important;
+    -webkit-text-fill-color:#111 !important;
+    background:none !important;
+    opacity:1 !important;
+    visibility:visible !important;
+  }
+
+  /* 右側：横並び・右詰め */
+  .lineMeta{
+    display:flex !important;
+    flex-direction: row !important;     /* ← 縦にしない */
+    align-items: baseline !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+    white-space: nowrap !important;
+    text-align: right !important;
+  }
+
+  .lineQty{
+    font-size: 14px !important;
+    color: rgba(15,23,42,.70) !important;
+  }
+
+  .lineSum{
+    font-size: 16px !important;
+    font-weight: 1000 !important;
+    color: rgba(15,23,42,.90) !important;
+    -webkit-text-fill-color: rgba(15,23,42,.90) !important;
+    background:none !important;
+  }
+}
+
