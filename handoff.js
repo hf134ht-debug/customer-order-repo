@@ -673,14 +673,15 @@ function bindEventsOnce() {
     return;
   }
 
-   function boot() {
+ /* ===== init（1回だけ・安全版） ===== */
+function boot() {
   if (!GAS_WEB_APP_URL || !GAS_WEB_APP_URL.includes("script.google.com")) {
     setMsg("err", "GAS_WEB_APP_URL が未設定です。");
     return;
   }
-  showLoadingUI();        // ★即表示
-  bindEventsOnce();       // ★イベント登録
-  initShopToggle_();      // ★開店/閉店トグル
+  showLoadingUI();        // 即表示
+  bindEventsOnce();       // イベント登録
+  initShopToggle_();      // 開店/閉店
   refresh({ silent: false });
 }
 
