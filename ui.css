@@ -28,6 +28,8 @@
 
   --shadow: 0 18px 45px rgba(0,0,0,.18);
   --shadow2: 0 10px 22px rgba(0,0,0,.14);
+   
+   --fw: 1000; /* 基本の太さ */
 }
 
 /* =========================
@@ -37,8 +39,24 @@
 html,body{ height:100%; }
 body{
   margin:0;
-  font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif;
+  font-family: "Inter", "Noto Sans JP", system-ui, -apple-system, "Segoe UI",
+               "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
   color: var(--ink);
+  font-weight: 700; /* 全体の標準を少し太めに */
+   }
+
+/* 主要テキストは太字固定（あなたの“太い”感じに戻す） */
+.brandTitle,
+.navItem,
+.pill,
+.btn,
+.name,
+.price,
+.lineName,
+.lineQty,
+.lineSum{
+  font-weight: var(--fw) !important;
+}
 
   background:
     radial-gradient(900px 600px at 15% -10%, rgba(168,85,247,.10), transparent 55%),
@@ -450,18 +468,48 @@ summary{ cursor:pointer; font-weight:1100; }
    MOBILE
 ========================= */
 @media (max-width: 520px){
-  .headRow{ flex-wrap:wrap; }
-  .topNav{ width:100%; justify-content:flex-start; }
-  .shopBar{ width:100%; justify-content:flex-start; }
+  .headRow{
+    flex-wrap:wrap;
+    gap:10px;
+    padding: 10px 0;
+  }
 
-  .brandTitle{ font-size: 28px; } /* “太い/でかい”維持 */
-  .lineName{ font-size:16px; }
-  .lineQty{ font-size:15px; }
-  .lineSum{ font-size:16px; }
-  .prodList{ grid-template-columns: 1fr; }
+  /* 1段目：タイトル */
+  .brandTitle{
+    font-size: 24px;   /* 少し小さくして被り防止 */
+    line-height: 1.05;
+  }
+
+  /* 2段目：ナビ */
+  .topNav{
+    width:100%;
+    justify-content:flex-start;
+    gap:8px;
+  }
+  .navItem{
+    padding: 10px 12px;
+  }
+
+  /* 3段目：受付状態＋開閉ボタン（必ず改行） */
+  .shopBar{
+    width:100%;
+    justify-content:flex-start;
+    gap:8px;
+  }
+
+  /* toolRow も見やすく */
+  .toolRow{ gap:10px; }
+  .toolRight{ gap:10px; }
 }
 
 /* reduce motion */
 @media (prefers-reduced-motion: reduce){
   *{ transition:none !important; }
 }
+
+.toolLeft{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
