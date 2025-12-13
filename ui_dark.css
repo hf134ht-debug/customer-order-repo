@@ -184,3 +184,34 @@ th,td{ border-bottom:1px solid var(--line) !important; }
 @media (prefers-reduced-motion: reduce){
   *{ transition:none !important; animation:none !important; }
 }
+
+/* Open/Close buttons */
+.btn-open{
+  background: rgba(34,197,94,.16);
+  border-color: rgba(34,197,94,.70);
+}
+.btn-open:hover{ background: rgba(34,197,94,.22); }
+
+.btn-close{
+  background: rgba(239,68,68,.16);
+  border-color: rgba(239,68,68,.70);
+}
+.btn-close:hover{ background: rgba(239,68,68,.22); }
+
+.badge-open, .badge-close{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid var(--line);
+  background: rgba(255,255,255,.04);
+  font-weight:900;
+}
+.badge-open{ border-color: rgba(34,197,94,.70); background: rgba(34,197,94,.14); }
+.badge-close{ border-color: rgba(239,68,68,.70); background: rgba(239,68,68,.14); }
+
+.dot-open,.dot-close{
+  width:10px;height:10px;border-radius:50%;
+}
+.dot-open{ background: var(--ok); }
+.dot-close{ background: var(--danger); }
+
