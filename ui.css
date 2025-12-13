@@ -691,3 +691,139 @@ body{
   }
 }
 
+/* =========================================================
+   CUSTOMER (Order Counter) - Unified alias layer
+   - customer.htmlのクラス名を崩さず ui.css の世界観へ寄せる
+========================================================= */
+
+/* customerのheaderも共通ヘッダーの見た目に寄せる */
+header{
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(63,68,76,.92);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(255,255,255,.15);
+}
+
+/* customerの上部行 */
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:12px 0;
+}
+
+/* customerタイトルを brandTitle と同格に */
+.topbar .title{
+  font-weight: 1100;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  font-size: 28px;
+  line-height: 1;
+  background: linear-gradient(90deg, var(--a1), var(--a2));
+  -webkit-background-clip:text;
+  background-clip:text;
+  color: transparent;
+}
+
+/* customerのpillも共通pillの見た目へ */
+.totalTop.pill{
+  color: var(--hdr-ink);
+  border-color: rgba(255,255,255,.55);
+  background: rgba(255,255,255,.06);
+}
+
+/* tabs を topNav風に */
+.tabs{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+  padding: 0 0 12px;
+}
+
+.tabbtn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:10px 14px;
+  border-radius:999px;
+  border:2px solid rgba(255,255,255,.60);
+  color: var(--hdr-ink);
+  font-weight: var(--fw);
+  background: rgba(255,255,255,.06);
+  transition: transform .06s ease, filter .12s ease, background .12s ease;
+  flex: 0 0 auto; /* customerは2個なので伸ばさない */
+}
+.tabbtn:active{ transform: scale(.98); }
+.tabbtn.active{
+  border-color: rgba(67,199,255,.90);
+  box-shadow: 0 0 0 4px rgba(67,199,255,.18);
+}
+
+/* customerのカード(itemCard)を共通cardに寄せる */
+.itemCard{
+  background: #ffffff !important;
+  border: 4px solid rgba(99,102,241,.35) !important;
+  border-radius: 22px !important;
+  box-shadow:
+    0 18px 40px rgba(0,0,0,.22),
+    0 6px 14px rgba(0,0,0,.18) !important;
+  padding:14px;
+  position:relative;
+}
+.itemCard::before{
+  content:"";
+  position:absolute;
+  inset: 8px;
+  border-radius: 14px;
+  border: 3px solid rgba(34,211,238,.25);
+  pointer-events:none;
+}
+
+/* detailPanelはUnifiedの“details”と同じトーンに */
+.detailPanel{
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(17,24,39,.18);
+}
+
+/* customerの下部バー（未定義なので追加） */
+.bottomBar{
+  position: fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  z-index: 30;
+  background: rgba(63,68,76,.92);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-top: 1px solid rgba(255,255,255,.15);
+}
+.bottomInner{
+  max-width:980px;
+  margin:0 auto;
+  padding: 10px 12px;
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.bottomTotal{
+  flex:1;
+  color:#fff;
+  font-weight: var(--fw);
+}
+
+/* overlay/modalは既にui.cssにあるので customer側の既存構造に寄せる */
+#overlay.overlay{
+  align-items:flex-end; /* handoff同様 */
+}
+#modal.modal h3{
+  margin: 4px 0 10px;
+}
+
+
