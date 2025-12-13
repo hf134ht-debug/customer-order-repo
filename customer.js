@@ -710,6 +710,9 @@ qs("#btnLoadLast").addEventListener("click", async () => {
   }, true);
 })();
 
+// ===== customer画面では ui.js のナビを無効化 =====
+window.IS_CUSTOMER_PAGE = true;
+
 (async function init(){
   if (!GAS_WEB_APP_URL || !GAS_WEB_APP_URL.includes("script.google.com")) {
     setMsg("err", "GAS_WEB_APP_URL が未設定です。");
@@ -732,3 +735,4 @@ qs("#btnLoadLast").addEventListener("click", async () => {
   const last = localStorage.getItem(LS_LAST_ORDER_ID) || "";
   qs("#btnLoadLast").style.display = last ? "" : "none";
 })();
+
