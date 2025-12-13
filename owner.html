@@ -134,6 +134,32 @@
         margin-bottom:4px;
       }
     }
+
+    /* ===== toggle color mapping ===== */
+/* 営業/閉店（checked=営業=緑） */
+.toggleShop input:checked + .track{
+  background: rgba(51,209,122,.22);
+  border-color: rgba(51,209,122,.55);
+}
+
+/* 売切/販売中（checked=売切=赤） */
+.toggleSold input:checked + .track{
+  background: rgba(255,90,122,.22);
+  border-color: rgba(255,90,122,.55);
+}
+
+/* ラベル色も一致（売切=赤系 / 販売中=緑系、文字は黒） */
+.toggleText.on{
+  background:#dbffe5;
+  border-color:#1faa59;
+  color:#111;
+}
+.toggleText.off{
+  background:#ffe3ea;
+  border-color:#ff5a7a;
+  color:#111;
+}
+
   </style>
 
   <script>
@@ -246,4 +272,5 @@
   <script src="./owner.js?v=2"></script>
 </body>
 </html>
+
 
