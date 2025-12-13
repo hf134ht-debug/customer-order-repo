@@ -71,7 +71,7 @@ function render(){
   const isMobile = window.matchMedia && window.matchMedia("(max-width: 760px)").matches;
 
   tbody.innerHTML = current.map(p => {
-    const sold = !!p.sold_out;
+    const sold = !!(p.is_sold_out ?? p.sold_out);
     const pid = String(p.product_id || "");
     const pidEsc = escapeHtml(pid);
 
@@ -163,7 +163,12 @@ async function saveRow(productId){
   try{
     const p = readRow(productId);
     if(!p) throw new Error("row not found");
-    const json = await apiPost({ mode:"upsertProduct", product:p });
+    const json = await apiPost({
+  mode: "setProductSoldOut",
+  product_id: productId,
+  sold_out: !!soldOut,
+  is_sold_out: !!soldOut,
+});
     if(!json.ok) throw new Error(json.error || "save failed");
     msg(`商品 ${productId} を保存しました`, false);
     await load();
@@ -329,3 +334,4 @@ document.addEventListener("DOMContentLoaded", async () => {
   // initial load
   await load();
 });
+
