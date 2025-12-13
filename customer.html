@@ -3,69 +3,252 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>お客さん用レジ</title>
+  <title>宵市カウンター</title>
+
+  <!-- ★ ナイトマーケット風：SERVE STATIONと同系統の変数（単一CSS統合の土台） -->
   <style>
-    :root { --bg:#f7f7fb; --card:#fff; --line:#e8e8ef; --text:#111; --muted:#666; --danger:#c0392b; --ok:#1e824c; }
-    body { margin:0; font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif; background:var(--bg); color:var(--text); }
-    header { position:sticky; top:0; z-index:5; background:rgba(247,247,251,.92); backdrop-filter: blur(10px); border-bottom:1px solid var(--line); }
-    .wrap { max-width: 720px; margin:0 auto; padding: 10px 12px 90px; }
-    .topbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding: 10px 0; flex-wrap:nowrap; }
-    .title { font-weight: 800; font-size: 18px; }
-    .pill { padding: 6px 10px; border:1px solid var(--line); border-radius: 999px; background:var(--card); font-weight:700; }
-    .totalTop { font-size: 18px; }
-    .tabs { display:flex; gap:8px; padding: 0 0 10px; }
-    .tabbtn { flex:1; padding:10px; border-radius: 12px; border:1px solid var(--line); background:var(--card); font-weight:800; }
-    .tabbtn.active { outline: 2px solid #111; }
+    :root{
+      --bg0:#070A12;
+      --bg1:#0B1224;
+      --card:#0E1630;
+      --card2:#0B132A;
+      --line:rgba(255,255,255,.10);
+      --text:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.65);
 
-    .grid { display:flex; flex-direction: column; gap: 10px; }
-    .itemCard { background:var(--card); border:1px solid var(--line); border-radius: 16px; padding: 12px; }
-    .row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-    .name { font-weight: 900; font-size: 16px; }
-    .price { font-weight: 900; }
-    .soldout { color: var(--muted); opacity:.55; filter: grayscale(1); }
-    .qty { display:flex; align-items:center; gap:8px; }
-    .btn { border:1px solid var(--line); background:var(--card); padding: 10px 12px; border-radius: 12px; font-weight:800; }
-    .btn:disabled { opacity:.45; }
-    .btnPrimary { background:#111; color:#fff; border-color:#111; }
-    .btnDanger { background: var(--danger); color:#fff; border-color: var(--danger); }
-    .btnGhost { background: transparent; }
-    input[type="number"] { width: 70px; padding: 10px; border-radius: 12px; border:1px solid var(--line); font-weight:800; }
+      --accent:#00E5FF;
+      --accent2:#FF4FD8;
+      --danger:#FF4D4D;
+      --ok:#2EE59D;
 
-    .detailPanel { display:none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); color: var(--text); }
-    .detailPanel.open { display:block; }
+      --shadow: 0 10px 28px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
 
-    .muted { color: var(--muted); font-size: 12px; }
-    .desc { white-space: pre-wrap; font-size: 14px; line-height: 1.45; }
-    .img { width:100%; border-radius: 12px; margin-top: 8px; border: 1px solid var(--line); }
-    .videoWrap { margin-top: 8px; }
-    .videoWrap iframe { width:100%; aspect-ratio: 16/9; border:0; border-radius: 12px; border:1px solid var(--line); }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN","Noto Sans JP", sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(900px 500px at 20% -10%, rgba(0,229,255,.20), transparent 60%),
+        radial-gradient(700px 400px at 90% 10%, rgba(255,79,216,.18), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1) 60%, #070A12);
+      min-height:100vh;
+    }
 
-    .bottomBar { position: fixed; left:0; right:0; bottom:0; z-index:6; background: rgba(247,247,251,.92); backdrop-filter: blur(10px); border-top:1px solid var(--line); }
-    .bottomInner { max-width:720px; margin:0 auto; padding: 10px 12px; display:flex; gap:10px; align-items:center; }
-    .bottomTotal { flex:1; font-weight: 900; font-size: 16px; }
+    header{
+      position:sticky; top:0; z-index:10;
+      background: rgba(7,10,18,.72);
+      backdrop-filter: blur(12px);
+      border-bottom:1px solid var(--line);
+    }
 
-    .msg { margin: 10px 0; padding: 10px 12px; border-radius: 12px; border:1px solid var(--line); background: var(--card); }
-    .msg.err { border-color: #f0c0c0; background: #fff5f5; color: var(--danger); }
-    .msg.ok { border-color: #bfe6cf; background: #f3fff7; color: var(--ok); }
+    .wrap{ max-width: 760px; margin:0 auto; padding: 12px 14px 96px; }
 
-    .overlay { position: fixed; inset:0; background: rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:10; }
-    .overlay.show { display:flex; }
-    .modal { width: min(92vw, 520px); background: var(--card); border-radius: 18px; border:1px solid var(--line); padding: 14px; }
-    .modal h3 { margin: 4px 0 10px; }
-    .modal .actions { display:flex; gap:10px; justify-content:flex-end; margin-top: 12px; flex-wrap: wrap; }
-    .list { margin: 8px 0; padding-left: 18px; }
-    .kv { display:flex; justify-content:space-between; gap:10px; font-weight:800; }
-    .bigNo { font-size: 44px; font-weight: 900; text-align:center; margin: 6px 0 6px; }
-    .small { font-size: 12px; color: var(--muted); word-break: break-all; }
-    .divider { height:1px; background: var(--line); margin: 12px 0; }
-    .inline { display:flex; gap:8px; align-items:center; }
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding: 8px 0 10px;
+    }
+    .brand{
+      display:flex; flex-direction:column; gap:2px;
+    }
+    .title{
+      font-weight: 1000;
+      letter-spacing:.3px;
+      font-size: 18px;
+      line-height:1.1;
+    }
+    .subtitle{
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: .2px;
+    }
 
-    .bannerEdit { margin-top: 6px; }
+    .pill{
+      padding: 8px 12px;
+      border:1px solid var(--line);
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(14,22,48,.92), rgba(11,19,42,.92));
+      box-shadow: var(--shadow);
+      font-weight: 1000;
+      white-space:nowrap;
+    }
+
+    .tabs{
+      display:flex; gap:10px; padding: 0 0 10px;
+    }
+    .tabbtn{
+      flex:1;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border:1px solid var(--line);
+      background: rgba(14,22,48,.85);
+      font-weight: 1000;
+      color: var(--text);
+    }
+    .tabbtn.active{
+      border-color: rgba(0,229,255,.55);
+      box-shadow: 0 0 0 2px rgba(0,229,255,.20) inset;
+    }
+
+    .panel{
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(14,22,48,.78);
+      box-shadow: var(--shadow);
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .controls{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+    }
+    .inp{
+      flex:1;
+      min-width: 180px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.20);
+      color: var(--text);
+      font-weight: 900;
+      outline:none;
+    }
+    .sel{
+      padding: 10px 10px;
+      border-radius: 14px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.20);
+      color: var(--text);
+      font-weight: 900;
+      outline:none;
+    }
+    .chip{
+      display:flex; align-items:center; gap:8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.18);
+      font-weight: 900;
+      color: var(--text);
+      cursor:pointer;
+      user-select:none;
+    }
+    .chip input{ accent-color: var(--accent); }
+
+    .grid{ display:flex; flex-direction:column; gap: 10px; }
+
+    .itemCard{
+      background: linear-gradient(180deg, rgba(14,22,48,.92), rgba(11,19,42,.92));
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      box-shadow: var(--shadow);
+    }
+    .row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .name{ font-weight: 1000; font-size: 16px; }
+    .price{ font-weight: 1000; }
+    .soldout{ opacity:.45; filter: grayscale(1); }
+
+    .btn{
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.18);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 14px;
+      font-weight: 1000;
+    }
+    .btn:disabled{ opacity:.45; }
+    .btnPrimary{
+      background: linear-gradient(90deg, rgba(0,229,255,.26), rgba(255,79,216,.18));
+      border-color: rgba(0,229,255,.40);
+    }
+    .btnDanger{ background: rgba(255,77,77,.18); border-color: rgba(255,77,77,.45); }
+    .btnGhost{ background: transparent; }
+
+    .qty{ display:flex; align-items:center; gap:8px; }
+    input[type="number"]{
+      width: 76px;
+      padding: 10px 10px;
+      border-radius: 14px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.20);
+      color: var(--text);
+      font-weight: 1000;
+      outline:none;
+    }
+
+    .detailPanel{
+      display:none;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--line);
+      color: var(--text);
+    }
+    .detailPanel.open{ display:block; }
+
+    .muted{ color: var(--muted); font-size: 12px; }
+    .desc{ white-space: pre-wrap; font-size: 14px; line-height: 1.45; }
+    .img{ width:100%; border-radius: 14px; margin-top: 8px; border:1px solid var(--line); }
+    .videoWrap{ margin-top: 8px; }
+    .videoWrap iframe{ width:100%; aspect-ratio:16/9; border:0; border-radius: 14px; border:1px solid var(--line); }
+
+    .msg{
+      margin: 10px 0;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.18);
+      box-shadow: var(--shadow);
+    }
+    .msg.err{ border-color: rgba(255,77,77,.35); color: var(--danger); }
+    .msg.ok{ border-color: rgba(46,229,157,.35); color: var(--ok); }
+
+    .bottomBar{
+      position: fixed; left:0; right:0; bottom:0; z-index:20;
+      background: rgba(7,10,18,.72);
+      backdrop-filter: blur(12px);
+      border-top:1px solid var(--line);
+    }
+    .bottomInner{
+      max-width:760px; margin:0 auto;
+      padding: 10px 14px;
+      display:flex; gap:10px; align-items:center;
+    }
+    .bottomTotal{ flex:1; font-weight: 1000; font-size: 16px; }
+
+    .overlay{
+      position: fixed; inset:0;
+      background: rgba(0,0,0,.45);
+      display:none; align-items:center; justify-content:center;
+      z-index:30;
+    }
+    .overlay.show{ display:flex; }
+    .modal{
+      width: min(92vw, 540px);
+      background: linear-gradient(180deg, rgba(14,22,48,.96), rgba(11,19,42,.96));
+      border-radius: 20px;
+      border:1px solid var(--line);
+      padding: 14px;
+      box-shadow: var(--shadow);
+    }
+    .modal h3{ margin: 4px 0 10px; }
+    .modal .actions{ display:flex; gap:10px; justify-content:flex-end; margin-top: 12px; flex-wrap:wrap; }
+
+    .list{ margin: 8px 0; padding-left: 18px; }
+    .kv{ display:flex; justify-content:space-between; gap:10px; font-weight:1000; }
+    .bigNo{ font-size: 44px; font-weight: 1100; text-align:center; margin: 6px 0 6px; }
+    .small{ font-size: 12px; color: var(--muted); word-break: break-all; }
+    .divider{ height:1px; background: var(--line); margin: 12px 0; }
+    .inline{ display:flex; gap:8px; align-items:center; }
+
     @media (max-width: 520px){
-  .topbar{ flex-wrap:wrap; }
-}
+      .topbar{ flex-wrap:wrap; }
+      .inp{ min-width: 140px; }
+    }
   </style>
 
+  <!-- 既存の統一CSSがあるなら残してOK（後で単一CSSに統合する） -->
   <link rel="stylesheet" href="./ui_dark.css?v=2">
 </head>
 
@@ -73,7 +256,10 @@
   <header>
     <div class="wrap">
       <div class="topbar">
-        <div class="title">お客さん用レジ</div>
+        <div class="brand">
+          <div class="title">宵市カウンター</div>
+          <div class="subtitle">Night Market Ordering</div>
+        </div>
         <div class="pill totalTop" id="totalTop">合計 ¥0</div>
       </div>
 
@@ -82,7 +268,7 @@
         <button class="tabbtn" id="tabMy">② 注文確認</button>
       </div>
 
-      <div id="editBanner" class="msg ok bannerEdit" style="display:none;"></div>
+      <div id="editBanner" class="msg ok" style="display:none;"></div>
     </div>
   </header>
 
@@ -91,6 +277,22 @@
 
     <!-- ① 注文画面 -->
     <section id="viewPos">
+      <!-- ★追加：検索/売切非表示/密度 -->
+      <div class="panel">
+        <div class="controls">
+          <input id="searchInput" class="inp" type="text" placeholder="商品名で検索…" />
+          <select id="densitySel" class="sel" title="表示密度">
+            <option value="3">表示：標準</option>
+            <option value="6">表示：コンパクト</option>
+          </select>
+          <label class="chip" title="売切を隠す">
+            <input id="hideSoldOut" type="checkbox">
+            売切非表示
+          </label>
+        </div>
+        <div class="muted" style="margin-top:8px;">※検索は端末内フィルタ（GASは増やしません）</div>
+      </div>
+
       <div id="productsLoading" class="msg">商品を読み込み中…</div>
       <div class="grid" id="productList"></div>
     </section>
@@ -100,12 +302,14 @@
       <div class="itemCard">
         <div class="name">注文を確認</div>
         <div class="muted">注文確定後に表示される「注文ID」で確認できます。</div>
+
         <div class="inline" style="margin-top:10px;">
-          <input id="orderIdInput" type="text" placeholder="注文ID（例：O2025...）" style="flex:1;padding:10px;border-radius:12px;border:1px solid var(--line);font-weight:800;">
+          <input id="orderIdInput" class="inp" type="text" placeholder="注文ID（例：O2025...）">
           <button class="btn" id="btnLoadMy">表示</button>
         </div>
+
         <div class="muted" style="margin-top:8px;">
-          直近の注文がある場合は自動で表示できます：
+          直近の注文がある場合：
           <button class="btn btnGhost" id="btnLoadLast">直近の注文</button>
         </div>
       </div>
@@ -133,16 +337,12 @@
     </div>
   </div>
 
-    <!-- ★ GAS URLだけHTML側で渡す（環境切替しやすい） -->
+  <!-- ★ GAS URLだけHTML側で渡す（環境切替しやすい） -->
   <script>
     window.GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzeeGTJKZXHsVEw8DMz_QahMsnbqAUzDM3D_9mnv1LpVRxIitpL0F3xlCTwKUjV0OURzQ/exec";
   </script>
 
-  <!-- ★ ロジックは外部JSへ -->
   <script src="./customer.js" defer></script>
   <script src="./ui.js?v=1"></script>
 </body>
 </html>
-
-
-
