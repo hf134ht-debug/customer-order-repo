@@ -38,6 +38,15 @@ function buildLinesHtml(items) {
   }).join("");
 }
 
+const GAS_WEB_APP_URL = (window.GAS_WEB_APP_URL || "").trim();
+(async function init(){
+  if (!GAS_WEB_APP_URL || !GAS_WEB_APP_URL.includes("script.google.com")) {
+    setMsg("err", "GAS URL が未設定です。");
+    return;
+  }
+  await refresh({ silent:false });
+})();
+
 function setMsg(type, text) {
   const area = qs("#msgArea");
   if (!text) { area.innerHTML = ""; return; }
@@ -657,6 +666,7 @@ async function initShopToggle_(){
 document.addEventListener("DOMContentLoaded", () => {
   initShopToggle_();
 });
+
 
 
 
