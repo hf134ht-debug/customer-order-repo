@@ -122,6 +122,78 @@ function setView(which) {
   if (!isPos) qs("#btnEditCancel").style.display = "none";
 }
 
+// ===== UI filter state（検索 / 売切非表示 / 表示密度）=====
+const uiState = {
+  query: "",
+  hideSoldOut: false,
+  density: 3, // 3=標準 / 6=コンパクト
+};
+
+function applyDensity_() {
+  const grid = qs("#productList");
+  if (!grid) return;
+  // CSSが未対応でも効くように、JSで直接列数を変更
+  const cols = Number(uiState.density || 3);
+  grid.style.display = "grid";
+  grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+  grid.style.gap = "10px";
+  document.body.classList.toggle("isDense", cols >= 6); // CSSで追加調整したい場合用
+}
+
+function normalize_(s){
+  return String(s || "").trim().toLowerCase();
+}
+
+function filterProducts_(list){
+  let arr = Array.isArray(list) ? list.slice() : [];
+  const q = normalize_(uiState.query);
+
+  if (uiState.hideSoldOut) {
+    arr = arr.filter(p => !p.is_sold_out);
+  }
+  if (q) {
+    arr = arr.filter(p => {
+      const hay = `${p.name || ""} ${p.product_id || ""}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }
+  return arr;
+}
+
+function bindPosControlsOnce_(){
+  if (window.__posControlsBound) return;
+  window.__posControlsBound = true;
+
+  const search = document.getElementById("searchInput");
+  const density = document.getElementById("densitySel");
+  const hide = document.getElementById("hideSoldOut");
+
+  if (search) {
+    search.addEventListener("input", () => {
+      uiState.query = search.value || "";
+      renderProductList(); // ★再描画
+    });
+  }
+
+  if (density) {
+    density.addEventListener("change", () => {
+      uiState.density = Number(density.value || 3);
+      applyDensity_();
+      renderProductList(); // ★再描画（見た目の詰め具合が変わる想定）
+    });
+  }
+
+  if (hide) {
+    hide.addEventListener("change", () => {
+      uiState.hideSoldOut = !!hide.checked;
+      renderProductList(); // ★再描画
+    });
+  }
+
+  // 初期反映
+  applyDensity_();
+}
+
 // ---------- modal ----------
 function openModal({ title, bodyHtml, actions }) {
   qs("#modalTitle").textContent = title || "確認";
@@ -175,6 +247,8 @@ async function loadProducts() {
       products.forEach(p => { if (qtyMap[p.product_id] == null) qtyMap[p.product_id] = 0; });
     }
 
+    bindPosControlsOnce_();
+
     renderProductList();
     updateTotals();
     qs("#productsLoading").style.display = "none";
@@ -190,7 +264,18 @@ function renderProductList() {
   const list = qs("#productList");
   list.innerHTML = "";
 
-  products.forEach(p => {
+  // ★検索/売切非表示を反映
+  const view = filterProducts_(products);
+
+  // ★密度反映（CSS未対応でも効く）
+  applyDensity_();
+
+  if (!view.length) {
+    list.innerHTML = `<div class="msg">該当する商品がありません</div>`;
+    return;
+  }
+
+  view.forEach(p => {
     const sold = !!p.is_sold_out;
     const el = document.createElement("div");
     el.className = "itemCard" + (sold ? " soldout" : "");
@@ -198,10 +283,15 @@ function renderProductList() {
 
     const currentQty = Number(qtyMap[p.product_id] || 0);
 
+    // ★売切の見た目をハッキリ（操作できないのも明確に）
+    const soldBadge = sold
+      ? `<span class="pill on" style="margin-left:8px;">売切</span>`
+      : `<span class="pill off" style="margin-left:8px;color:#111;">販売中</span>`;
+
     el.innerHTML = `
       <div class="row">
         <div>
-          <div class="name">${escapeHtml(p.name)} ${sold ? "<span class='muted'>(売切)</span>" : ""}</div>
+          <div class="name">${escapeHtml(p.name)} ${soldBadge}</div>
           <div class="muted">${escapeHtml(p.product_id)}</div>
         </div>
         <div class="price">${yen(p.price)}</div>
@@ -218,51 +308,56 @@ function renderProductList() {
         </button>
       </div>
 
-      <!-- ★押す前は空（最初から“読み込み中…”を出さない） -->
       <div class="detailPanel" style="display:none;"></div>
     `;
+
+    // ★売切なら “完全に触れない” 感を強める（input/buttonはdisabled済みだが念のため）
+    if (sold) {
+      el.style.opacity = "0.6";
+    }
 
     const minus = el.querySelector(".btnMinus");
     const plus  = el.querySelector(".btnPlus");
     const input = el.querySelector(".qtyInput");
 
-    minus.addEventListener("click", () => {
-      const v = Math.max(0, Number(input.value||0) - 1);
-      input.value = v;
-      qtyMap[p.product_id] = v;
-      updateTotals();
-    });
-    plus.addEventListener("click", () => {
-      const v = Math.max(0, Number(input.value||0) + 1);
-      input.value = v;
-      qtyMap[p.product_id] = v;
-      updateTotals();
-    });
-    input.addEventListener("input", () => {
-      const v = Math.max(0, Number(input.value||0));
-      qtyMap[p.product_id] = v;
-      updateTotals();
-    });
+    if (!sold) {
+      minus.addEventListener("click", () => {
+        const v = Math.max(0, Number(input.value||0) - 1);
+        input.value = v;
+        qtyMap[p.product_id] = v;
+        updateTotals();
+      });
+      plus.addEventListener("click", () => {
+        const v = Math.max(0, Number(input.value||0) + 1);
+        input.value = v;
+        qtyMap[p.product_id] = v;
+        updateTotals();
+      });
+      input.addEventListener("input", () => {
+        const v = Math.max(0, Number(input.value||0));
+        qtyMap[p.product_id] = v;
+        updateTotals();
+      });
+    }
 
     const btn = el.querySelector(".detailToggleBtn");
     const panel = el.querySelector(".detailPanel");
 
-    btn.addEventListener("click", async () => {
-      const isOpen = panel.classList.contains("open");
-      if (isOpen) {
-        panel.classList.remove("open");
-        panel.style.display = "none";     // ★CSS競合しても必ず閉じる
-        btn.querySelector(".chev").textContent = "▼";
-        return;
-      }
-
-      // ★CSS側に .detailPanel.open が無くても必ず表示されるようにJSで強制
-      panel.classList.add("open");
-      panel.style.display = "block";
-      btn.querySelector(".chev").textContent = "▲";
-
-      await ensureProductDetailLoaded(p.product_id, panel);
-    });
+    if (!sold) {
+      btn.addEventListener("click", async () => {
+        const isOpen = panel.classList.contains("open");
+        if (isOpen) {
+          panel.classList.remove("open");
+          panel.style.display = "none";
+          btn.querySelector(".chev").textContent = "▼";
+          return;
+        }
+        panel.classList.add("open");
+        panel.style.display = "block";
+        btn.querySelector(".chev").textContent = "▲";
+        await ensureProductDetailLoaded(p.product_id, panel);
+      });
+    }
 
     list.appendChild(el);
   });
@@ -732,3 +827,4 @@ qs("#btnLoadLast").addEventListener("click", async () => {
   const last = localStorage.getItem(LS_LAST_ORDER_ID) || "";
   qs("#btnLoadLast").style.display = last ? "" : "none";
 })();
+
