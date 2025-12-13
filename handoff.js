@@ -575,11 +575,23 @@ async function apiPostForm_(obj){
   return await r.json();
 }
 function renderShopState_(open){
-  const el = document.getElementById("shopState");
-  if (!el) return;
-  el.textContent = open ? "受付：営業中" : "受付：停止中";
-  el.style.color = open ? "#0a7" : "#c00";
+  const badge = document.getElementById("shopState");
+  const btn = document.getElementById("btnToggleShop");
+  if (!badge || !btn) return;
+
+  if (open) {
+    badge.className = "badge-open";
+    badge.innerHTML = `<span class="dot-open"></span><span>受付：営業中</span>`;
+    btn.className = "btn btn-close";
+    btn.textContent = "閉店（受付停止）";
+  } else {
+    badge.className = "badge-close";
+    badge.innerHTML = `<span class="dot-close"></span><span>受付：停止中</span>`;
+    btn.className = "btn btn-open";
+    btn.textContent = "開店（受付再開）";
+  }
 }
+
 async function initShopToggle_(){
   const s = await apiGet_({ mode:"getSettings" });
   if (s.ok) renderShopState_(!!s.settings.SHOP_OPEN);
@@ -596,4 +608,5 @@ async function initShopToggle_(){
 document.addEventListener("DOMContentLoaded", () => {
   initShopToggle_();
 });
+
 
