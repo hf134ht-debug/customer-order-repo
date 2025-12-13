@@ -6,28 +6,14 @@ const LS_LAST_ORDER_ID = "pos_last_order_id";
 
 let products = [];
 let qtyMap = {};        // product_id -> qty
-let detailCache = {};
+let detailCache = {};   // product_id -> detail obj
 let loading = { products:false, checkout:false, my:false };
-let submitToken = null;
+let submitToken = null; // ★二重送信対策：送信中は同じtokenを使う
 
-// ★通信失敗→再送でも同じ注文になるように、sessionStorage に一時保存
+// ★強化：通信失敗→再送でも同じ注文になるように、sessionStorage に一時保存
 const SUBMIT_TOKEN_KEY = "pos_submit_token";
 const SUBMIT_TOKEN_TS_KEY = "pos_submit_token_ts";
-const SUBMIT_TOKEN_TTL_MS = 2 * 60 * 1000; // 2分
-
-const yen = (n) => "¥" + (Number(n||0)).toLocaleString("ja-JP");
-const qs = (s, el=document) => el.querySelector(s);
-
-function uuid() {
-  const a = crypto.getRandomValues(new Uint8Array(16));
-  a[6] = (a[6] & 0x0f) | 0x40;
-  a[8] = (a[8] & 0x3f) | 0x80;
-  const h = [...a].map(x=>x.toString(16).padStart(2,"0")).join("");
-  return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
-}
-function escapeHtml(s){
-  return String(s ?? "").replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
-}
+const SUBMIT_TOKEN_TTL_MS = 2 * 60 * 1000; // 2分だけ有効（必要なら延ばせます）
 
 function loadSubmitToken() {
   try {
@@ -41,12 +27,14 @@ function loadSubmitToken() {
     return t;
   } catch { return null; }
 }
+
 function saveSubmitToken(t) {
   try {
     sessionStorage.setItem(SUBMIT_TOKEN_KEY, t);
     sessionStorage.setItem(SUBMIT_TOKEN_TS_KEY, String(Date.now()));
   } catch {}
 }
+
 function clearSubmitToken() {
   submitToken = null;
   try {
@@ -56,7 +44,21 @@ function clearSubmitToken() {
 }
 
 let editOrderId = null;
-let editOriginalItems = null;
+let editOriginalItems = null; // ←キャンセルで戻す用（itemsスナップショット）
+
+const yen = (n) => "¥" + (Number(n||0)).toLocaleString("ja-JP");
+const uuid = () => {
+  const a = crypto.getRandomValues(new Uint8Array(16));
+  a[6] = (a[6] & 0x0f) | 0x40;
+  a[8] = (a[8] & 0x3f) | 0x80;
+  const h = [...a].map(x=>x.toString(16).padStart(2,"0")).join("");
+  return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
+};
+const qs = (s, el=document) => el.querySelector(s);
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, (c)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
 
 function setMsg(type, text) {
   const area = qs("#msgArea");
@@ -65,6 +67,7 @@ function setMsg(type, text) {
   const cls = type === "err" ? "msg err" : type === "ok" ? "msg ok" : "msg";
   area.innerHTML = `<div class="${cls}">${escapeHtml(text).replace(/\n/g,"<br>")}</div>`;
 }
+
 function showEditBanner(text) {
   const b = qs("#editBanner");
   if (!b) return;
@@ -72,6 +75,7 @@ function showEditBanner(text) {
   b.style.display = "";
   b.textContent = text;
 }
+
 function updateBottomButtons() {
   const isEditing = !!editOrderId;
   qs("#btnCheckout").textContent = isEditing ? "変更を保存" : "注文確定";
@@ -87,6 +91,7 @@ function calcTotal() {
   }
   return total;
 }
+
 function updateTotals() {
   const total = calcTotal();
   qs("#totalTop").textContent = `合計 ${yen(total)}`;
@@ -99,41 +104,9 @@ function buildOrderItemsFromState() {
   const items = [];
   for (const p of products) {
     const q = Number(qtyMap[p.product_id] || 0);
-    if (q > 0) items.push({
-      product_id: p.product_id,
-      qty: q,
-      name: p.name,
-      unit_price: p.price,
-      line_total: q * p.price
-    });
+    if (q > 0) items.push({ product_id: p.product_id, qty: q, name: p.name, unit_price: p.price, line_total: q * p.price });
   }
   return items;
-}
-
-/* ===== 内訳HTML（handoffと同じ思想で統一） ===== */
-function buildLinesHtml(items) {
-  const arr = Array.isArray(items) ? items : [];
-  if (!arr.length) return `<li class="lineEmpty">（内訳なし）</li>`;
-
-  return arr.map(it => {
-    const name = escapeHtml(it.product_name_at_sale || it.name || it.product_id || "");
-    const qty = Number(it.qty || 0);
-    const unit = Number(it.unit_price || it.price || 0);
-    const lineTotal = Number(
-      it.line_total != null ? it.line_total :
-      it.subtotal != null ? it.subtotal :
-      (qty * unit)
-    );
-    return `
-      <li class="lineRow">
-        <span class="lineName">${name}</span>
-        <span class="lineMeta">
-          <span class="lineQty">× ${qty}</span>
-          <span class="lineSum">${yen(lineTotal)}</span>
-        </span>
-      </li>
-    `;
-  }).join("");
 }
 
 function setView(which) {
@@ -149,7 +122,7 @@ function setView(which) {
   if (!isPos) qs("#btnEditCancel").style.display = "none";
 }
 
-/* ---------- modal ---------- */
+// ---------- modal ----------
 function openModal({ title, bodyHtml, actions }) {
   qs("#modalTitle").textContent = title || "確認";
   qs("#modalBody").innerHTML = bodyHtml || "";
@@ -167,7 +140,7 @@ function openModal({ title, bodyHtml, actions }) {
 function closeModal() { qs("#overlay").classList.remove("show"); }
 qs("#overlay").addEventListener("click", (e) => { if (e.target.id === "overlay") closeModal(); });
 
-/* ---------- API ---------- */
+// ---------- API ----------
 async function apiGet(params) {
   const url = new URL(GAS_WEB_APP_URL);
   Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
@@ -183,7 +156,7 @@ async function apiPost(payload) {
   return await res.json();
 }
 
-/* ---------- Products ---------- */
+// ---------- Products ----------
 async function loadProducts() {
   loading.products = true;
   setMsg("", "");
@@ -219,11 +192,11 @@ function renderProductList() {
 
   products.forEach(p => {
     const sold = !!p.is_sold_out;
-    const currentQty = Number(qtyMap[p.product_id] || 0);
-
     const el = document.createElement("div");
     el.className = "itemCard" + (sold ? " soldout" : "");
     el.dataset.pid = p.product_id;
+
+    const currentQty = Number(qtyMap[p.product_id] || 0);
 
     el.innerHTML = `
       <div class="row">
@@ -236,86 +209,93 @@ function renderProductList() {
 
       <div class="row" style="margin-top:10px;">
         <div class="qty">
-          <button class="btn btnGhost" data-act="minus" ${sold ? "disabled":""}>−</button>
-          <input class="qtyInput" data-act="input" type="number" min="0" value="${currentQty}" ${sold ? "disabled":""}/>
-          <button class="btn btnGhost" data-act="plus" ${sold ? "disabled":""}>＋</button>
+          <button class="btn btnGhost btnMinus" ${sold ? "disabled":""}>−</button>
+          <input class="qtyInput" type="number" min="0" value="${currentQty}" ${sold ? "disabled":""}/>
+          <button class="btn btnGhost btnPlus" ${sold ? "disabled":""}>＋</button>
         </div>
-        <button class="btn detailToggleBtn" data-act="detail" ${sold ? "disabled":""}>
+        <button class="btn detailToggleBtn" ${sold ? "disabled":""}>
           詳細 <span class="chev">▼</span>
         </button>
       </div>
 
-      <div class="detailPanel">
-      </div>
+      <!-- ★重要：押す前は“何も表示しない”＝ルール厳守 -->
+      <div class="detailPanel"></div>
     `;
+
+    const minus = el.querySelector(".btnMinus");
+    const plus  = el.querySelector(".btnPlus");
+    const input = el.querySelector(".qtyInput");
+
+    minus.addEventListener("click", () => {
+      const v = Math.max(0, Number(input.value||0) - 1);
+      input.value = v;
+      qtyMap[p.product_id] = v;
+      updateTotals();
+    });
+    plus.addEventListener("click", () => {
+      const v = Math.max(0, Number(input.value||0) + 1);
+      input.value = v;
+      qtyMap[p.product_id] = v;
+      updateTotals();
+    });
+    input.addEventListener("input", () => {
+      const v = Math.max(0, Number(input.value||0));
+      qtyMap[p.product_id] = v;
+      updateTotals();
+    });
+
+    const btn = el.querySelector(".detailToggleBtn");
+    const panel = el.querySelector(".detailPanel");
+    btn.addEventListener("click", async () => {
+      const isOpen = panel.classList.contains("open");
+      if (isOpen) {
+        panel.classList.remove("open");
+        btn.querySelector(".chev").textContent = "▼";
+        // 閉じたら中身を残す（再オープンが速い）※好みで空にしてもOK
+        return;
+      }
+      panel.classList.add("open");
+      btn.querySelector(".chev").textContent = "▲";
+      await ensureProductDetailLoaded(p.product_id, panel);
+    });
 
     list.appendChild(el);
   });
 }
 
-/* ★イベント委譲：ここがスリム化の核（大量addEventListenerを削減） */
-qs("#productList").addEventListener("click", async (ev) => {
-  const btn = ev.target.closest("[data-act]");
-  if (!btn) return;
-
-  const card = ev.target.closest(".itemCard");
-  const pid = card?.dataset?.pid;
-  if (!pid) return;
-
-  const p = products.find(x => String(x.product_id) === String(pid));
-  if (!p) return;
-
-  const act = btn.getAttribute("data-act");
-
-  if (act === "minus" || act === "plus") {
-    const inp = card.querySelector(".qtyInput");
-    const cur = Math.max(0, Number(inp?.value || 0));
-    const next = act === "minus" ? Math.max(0, cur - 1) : (cur + 1);
-    if (inp) inp.value = String(next);
-    qtyMap[pid] = next;
-    updateTotals();
-    return;
-  }
-
-  if (act === "detail") {
-    const panel = card.querySelector(".detailPanel");
-    const chev = card.querySelector(".chev");
-    const isOpen = panel.classList.contains("open");
-    if (isOpen) {
-      panel.classList.remove("open");
-      if (chev) chev.textContent = "▼";
-      return;
-    }
-    panel.classList.add("open");
-    if (chev) chev.textContent = "▲";
-    await ensureProductDetailLoaded(pid, panel);
-    return;
-  }
-});
-
-qs("#productList").addEventListener("input", (ev) => {
-  const inp = ev.target.closest(".qtyInput");
-  if (!inp) return;
-  const card = ev.target.closest(".itemCard");
-  const pid = card?.dataset?.pid;
-  if (!pid) return;
-  const v = Math.max(0, Number(inp.value || 0));
-  qtyMap[pid] = v;
-  updateTotals();
-});
-
+/**
+ * ★GASは触らずに直すポイント：
+ *  - 「json.product が無い」時に {description:""} をキャッシュしてしまうと永久に“説明なし”固定になる
+ *  - なので “空ダミーをキャッシュしない”
+ */
 async function ensureProductDetailLoaded(productId, panelEl) {
-  if (detailCache[productId]) {
-    renderDetailPanel(panelEl, detailCache[productId]);
+  // キャッシュが「有効そう」なら表示
+  const cached = detailCache[productId];
+  if (cached && (String(cached.description || "").trim() || String(cached.image_url || "").trim() || String(cached.video_url || "").trim())) {
+    renderDetailPanel(panelEl, cached);
     return;
   }
+
+  // 開いた時にだけ表示
   panelEl.innerHTML = `<div class="muted">読み込み中…</div>`;
 
   try {
     const json = await apiGet({ mode:"getProductDetail", product_id: productId });
     if (!json.ok) throw new Error(json.error || "詳細取得に失敗しました。");
-    detailCache[productId] = json.product || { description:"", image_url:"", video_url:"" };
-    renderDetailPanel(panelEl, detailCache[productId]);
+
+    // 以前どおり json.product を使う（GAS側は変えない）
+    const p = json.product;
+
+    // ★ここが核心：空ならキャッシュしない（固定化しない）
+    if (!p) {
+      panelEl.innerHTML = `<div class="msg err">詳細データが見つかりませんでした（productが空）。</div>`;
+      return;
+    }
+
+    // もし description が空でも、画像/動画があるかもしれないので保存はOK
+    detailCache[productId] = p;
+
+    renderDetailPanel(panelEl, p);
   } catch (err) {
     panelEl.innerHTML = `<div class="msg err">詳細を読み込めませんでした。<br>詳細: ${escapeHtml(String(err.message||err))}</div>`;
   }
@@ -366,11 +346,11 @@ function renderDetailPanel(panelEl, d) {
       }
       btn.disabled = true;
       btn.textContent = "表示中";
-    }, { once:true });
+    });
   }
 }
 
-/* ---------- Checkout ---------- */
+// ---------- Checkout ----------
 async function checkoutFlow() {
   setMsg("", "");
   showEditBanner("");
@@ -383,13 +363,15 @@ async function checkoutFlow() {
     return;
   }
 
+  const lines = items.map(it => `<li>${escapeHtml(it.name)} × ${it.qty}（${yen(it.line_total)}）</li>`).join("");
+
   openModal({
     title: "この内容で注文しますか？",
     bodyHtml: `
       <div class="kv"><div>合計</div><div>${yen(total)}</div></div>
       <div class="divider"></div>
       <div><b>内訳</b></div>
-      <ul class="list">${buildLinesHtml(items)}</ul>
+      <ul class="list">${lines}</ul>
     `,
     actions: [
       { label:"戻る", className:"btn", onClick: () => closeModal() },
@@ -407,6 +389,7 @@ async function doCreateOrder(items) {
   loading.checkout = true;
   qs("#btnCheckout").disabled = true;
 
+  // ★送信トークン：同一セッション内の再送も同じtokenを使う
   submitToken = submitToken || loadSubmitToken() || uuid();
   saveSubmitToken(submitToken);
 
@@ -416,7 +399,7 @@ async function doCreateOrder(items) {
     const json = await apiPost({
       mode: "createOrder",
       source: "customer",
-      client_token: submitToken,
+      client_token: submitToken, // ★ここが重要
       items: items.map(x => ({ product_id: x.product_id, qty: x.qty })),
     });
     if (!json.ok) throw new Error(json.error || "注文の送信に失敗しました。");
@@ -424,12 +407,14 @@ async function doCreateOrder(items) {
     const order = json.order;
     localStorage.setItem(LS_LAST_ORDER_ID, order.order_id);
 
+    // ★URLにも注文IDを反映
     try {
       const u = new URL(location.href);
       u.searchParams.set("order_id", order.order_id);
       history.replaceState(null, "", u.toString());
     } catch {}
 
+    // ★ここで token を確実に破棄（成功したら次は新token）
     clearSubmitToken();
 
     qtyMap = Object.fromEntries(products.map(p => [p.product_id, 0]));
@@ -461,6 +446,7 @@ async function doCreateOrder(items) {
 
   } catch (err) {
     closeModal();
+    // ★失敗時は token を捨てない → 再送しても同じ注文として扱える
     setMsg("err", `注文を送信できませんでした。\n詳細: ${String(err.message || err)}\n\n※通信が不安定な場合は、もう一度「注文確定」を押してください（同じ注文として再送されます）。`);
   } finally {
     loading.checkout = false;
@@ -470,6 +456,7 @@ async function doCreateOrder(items) {
 
 async function saveEditOrder() {
   setMsg("", "");
+
   const items = buildOrderItemsFromState();
   if (items.length === 0) {
     setMsg("err", "商品が選択されていません。");
@@ -517,7 +504,7 @@ async function saveEditOrder() {
   });
 }
 
-/* ---------- My Order ---------- */
+// ---------- My Order ----------
 function statusText(status) {
   if (status === "pending") return "受付済み";
   if (status === "handed" || status === "auto_handed") return "受け渡し完了（変更不可）";
@@ -535,6 +522,7 @@ async function loadMyOrder(orderId) {
     const json = await apiGet({ mode:"getMyOrder", order_id: orderId });
     if (!json.ok) throw new Error(json.error || "注文の取得に失敗しました。");
     renderMyOrder(json.order, json.items);
+
   } catch (err) {
     qs("#myOrderArea").innerHTML = `
       <div class="msg err">
@@ -553,8 +541,8 @@ function renderMyOrder(order, items) {
 
   const list = Array.isArray(items) ? items : [];
   const lines = list.length
-    ? buildLinesHtml(list)
-    : `<li class="lineEmpty">内訳がありません（データ不整合）</li>`;
+    ? list.map(it => `<li>${escapeHtml(it.product_name_at_sale)} × ${Number(it.qty||0)}（${yen(Number(it.line_total||0))}）</li>`).join("")
+    : `<li class="muted">内訳がありません（データ不整合）</li>`;
 
   const hint = locked ? "スタッフが内容を確認中です。しばらくしてからお試しください。" :
                 editable ? "「変更」を押すと、①注文画面で数量を編集できます。" :
@@ -580,7 +568,7 @@ function renderMyOrder(order, items) {
 
       <div class="muted">${escapeHtml(hint)}</div>
 
-      <div class="actions">
+      <div class="row" style="margin-top:12px; justify-content:flex-end;">
         <button class="btn btnDanger" id="btnCancel" ${editable ? "" : "disabled"}>キャンセル</button>
         <button class="btn btnPrimary" id="btnEdit" ${editable ? "" : "disabled"}>変更</button>
       </div>
@@ -641,7 +629,7 @@ async function cancelMyOrder(orderId) {
   }
 }
 
-/* ---------- UI bindings ---------- */
+// ---------- UI ----------
 qs("#tabPos").addEventListener("click", () => setView("pos"));
 qs("#tabMy").addEventListener("click", () => setView("my"));
 
@@ -716,7 +704,7 @@ qs("#btnLoadLast").addEventListener("click", async () => {
   await loadProducts();
   updateTotals();
 
-  // URLパラメータから注文ID（あれば②を開いて表示）
+  // ★URLパラメータから注文IDを受け取る（あれば②を開いて表示）
   const sp = new URLSearchParams(location.search);
   const oidFromUrl = (sp.get("order_id") || "").trim();
   if (oidFromUrl) {
@@ -728,4 +716,3 @@ qs("#btnLoadLast").addEventListener("click", async () => {
   const last = localStorage.getItem(LS_LAST_ORDER_ID) || "";
   qs("#btnLoadLast").style.display = last ? "" : "none";
 })();
-
