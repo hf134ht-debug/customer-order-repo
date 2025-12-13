@@ -257,7 +257,39 @@
 <script src="./handoff.js"></script>
 <script src="./ui.js?v=1"></script>
 <link rel="stylesheet" href="./ui_theme.css?v=1">
+<style>
+/* === HOTFIX: 内訳は常に「左=商品名 / 右=×数量 + 小計」固定（スマホ含む） === */
+.card .list .lineRow{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  flex-direction:row !important;
+  flex-wrap:nowrap !important;
+}
+.card .list .lineName{
+  flex:1 1 auto !important;
+  min-width:0 !important;
+  text-align:left !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+}
+.card .list .lineMeta{
+  flex:0 0 auto !important;
+  display:flex !important;
+  justify-content:flex-end !important;
+  align-items:baseline !important;
+  gap:12px !important;
+  white-space:nowrap !important;
+  text-align:right !important;
+}
+@media (max-width:520px){
+  .card .list .lineRow{ display:flex !important; } /* ui_theme の grid を潰す */
+}
+</style>
+
 </body>
 </html>
+
 
 
