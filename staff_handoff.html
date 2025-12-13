@@ -66,16 +66,17 @@
 </head>
 <body>
 <header>
-  <div id="shopBar" style="margin:10px 0; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-  <span id="shopState" class="badge-open">
-    <span class="dot-open"></span><span>受付：営業中</span>
-  </span>
+  <div id="shopBar" class="topbar">
+  <div class="topbar-left">
+    <span id="shopState" class="badge-open">
+      <span class="dot-open"></span><span>受付：営業中</span>
+    </span>
+  </div>
 
-  <button id="btnToggleShop" class="btn btn-close">
-    閉店（受付停止）
-  </button>
+  <div class="topbar-right">
+    <button id="btnToggleShop" class="btn btn-close">閉店（受付停止）</button>
+  </div>
 </div>
-
 
   <div class="wrap">
     <div class="topbar">
@@ -182,6 +183,7 @@
 <script src="./ui.js?v=1"></script>
 </body>
 </html>
+
 
 
 
