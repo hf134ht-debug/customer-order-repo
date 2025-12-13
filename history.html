@@ -10,30 +10,78 @@
     header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
     nav a{margin-right:10px;text-decoration:none;}
 
-    .cal-wrap{max-width:520px;}
+    .cal-wrap{max-width:560px;}
     .cal-head{display:flex;justify-content:space-between;align-items:center;margin:10px 0;}
-    .cal-head button{padding:6px 10px;cursor:pointer;}
-    .cal-title{font-weight:800;font-size:18px;}
+    .cal-head button{padding:6px 12px;cursor:pointer;border-radius:10px;border:1px solid #bbb;background:#fff;}
+    .cal-title{font-weight:900;font-size:18px;}
+
+    .legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:12px;opacity:.9;margin:6px 0 10px;}
+    .lg{display:flex;gap:6px;align-items:center;}
+    .sw{width:14px;height:14px;border-radius:4px;border:1px solid #aaa;background:#fff;}
+    .sw.has{background:#dff3ff;border-color:#4aa3ff;}
+    .sw.sel{background:#c7ffd6;border-color:#24b24a;}
+    .sw.off{background:#f3f3f3;border-color:#ddd;}
 
     .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
     .dow{font-size:12px;opacity:.7;text-align:center;}
+
     .day{
-      height:44px;border:1px solid #ddd;border-radius:10px;
+      height:52px;border:1px solid #ddd;border-radius:12px;
       display:flex;align-items:center;justify-content:center;
       cursor:pointer; user-select:none;
       background:#fff;
+      position:relative;
+      font-weight:700;
     }
-    .day.off{opacity:.35;cursor:default;}
-    .day.has{border-width:2px;}
-    .day.sel{outline:3px solid #00000022;}
-    .day.today{font-weight:800;}
+    /* 月外 */
+    .day.off{opacity:.45;cursor:default;background:#f3f3f3;}
+    /* データあり日：塗りつぶし＋枠色 */
+    .day.has{background:#dff3ff;border-color:#4aa3ff;border-width:2px;}
+    /* 選択日：さらに分かる塗り */
+    .day.sel{background:#c7ffd6;border-color:#24b24a;border-width:2px;}
+    /* 今日：右上に小さく印 */
+    .day.today::after{
+      content:"今日";
+      position:absolute; top:4px; right:6px;
+      font-size:10px; opacity:.7;
+    }
+    /* データありの● */
+    .dot{
+      position:absolute;
+      bottom:6px;
+      width:8px;height:8px;border-radius:50%;
+      background:#1677ff;
+    }
+    .day.sel .dot{ background:#16a34a; }
+
     .msg{color:#c00;margin:8px 0;}
-    .list{margin-top:12px;max-width:720px;}
-    .card{border:1px solid #ddd;border-radius:14px;padding:10px;margin:10px 0;}
+    .picked{font-size:12px;opacity:.85;margin-top:4px;}
+
+    .list{margin-top:14px;max-width:760px;}
+    .card{border:1px solid #ddd;border-radius:14px;padding:10px;margin:10px 0;background:#fff;}
     .row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
     .sub{font-size:12px;opacity:.8;margin-top:2px;}
+
+    /* 状態ラベル：色で一目 */
+    .st{
+      display:inline-block;
+      font-size:12px;
+      padding:3px 8px;
+      border-radius:999px;
+      border:1px solid #bbb;
+      margin-left:8px;
+      white-space:nowrap;
+    }
+    .st.pending{background:#fff7cc;border-color:#e3c200;}
+    .st.handed{background:#dbffe5;border-color:#1faa59;}
+    .st.auto_handed{background:#dbe9ff;border-color:#3b82f6;}
+    .st.cancelled{background:#f1f1f1;border-color:#999;}
+
     .items{margin-top:8px;display:flex;flex-direction:column;gap:6px;}
-    .btn-cancel{padding:8px 12px;cursor:pointer;border-radius:10px;border:1px solid #999;background:#fff;}
+    .btn-cancel{
+      padding:8px 12px;cursor:pointer;border-radius:10px;
+      border:1px solid #999;background:#fff;
+    }
   </style>
 
   <script>
@@ -56,10 +104,16 @@
       <button id="nextMonth">→</button>
     </div>
 
+    <div class="legend">
+      <div class="lg"><span class="sw has"></span>データあり</div>
+      <div class="lg"><span class="sw sel"></span>選択中</div>
+      <div class="lg"><span class="sw off"></span>月外</div>
+    </div>
+
     <div class="cal-grid" id="calDow"></div>
     <div class="cal-grid" id="calGrid"></div>
 
-    <div class="sub" id="pickedLabel"></div>
+    <div class="picked" id="pickedLabel"></div>
     <div class="msg" id="msg"></div>
   </div>
 
