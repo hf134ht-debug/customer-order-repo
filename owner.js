@@ -20,11 +20,17 @@ async function apiGet(params){
 }
 
 async function apiPost(body){
-  const res = await fetch(GAS_WEB_APP_URL, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify(body)
+  const form = new URLSearchParams();
+  Object.keys(body).forEach(k => {
+    const v = body[k];
+    form.set(k, (typeof v === "object") ? JSON.stringify(v) : String(v));
   });
+
+  const res = await fetch(GAS_WEB_APP_URL, {
+    method: "POST",
+    body: form
+  });
+
   return await res.json();
 }
 
@@ -172,3 +178,4 @@ document.addEventListener("DOMContentLoaded", () => {
   $("btnResetSoldOut").addEventListener("click", resetSoldOutAll);
   load();
 });
+
