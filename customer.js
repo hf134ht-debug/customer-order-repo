@@ -132,13 +132,24 @@ const uiState = {
 function applyDensity_() {
   const grid = qs("#productList");
   if (!grid) return;
-  // CSSが未対応でも効くように、JSで直接列数を変更
-  const cols = Number(uiState.density || 3);
+
+  const mode = Number(uiState.density || 1);
+
   grid.style.display = "grid";
-  grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
-  grid.style.gap = "10px";
-  document.body.classList.toggle("isDense", cols >= 6); // CSSで追加調整したい場合用
+
+  if (mode === 2) {
+    grid.style.gridTemplateColumns = "repeat(2, minmax(0, 1fr))";
+    grid.style.gap = "10px";
+    grid.classList.add("dense");     // ★追加
+    document.body.classList.add("isDense");
+  } else {
+    grid.style.gridTemplateColumns = "minmax(0, 1fr)";
+    grid.style.gap = "12px";
+    grid.classList.remove("dense");  // ★追加
+    document.body.classList.remove("isDense");
+  }
 }
+
 
 function normalize_(s){
   return String(s || "").trim().toLowerCase();
@@ -343,6 +354,20 @@ function renderProductList() {
     const btn = el.querySelector(".detailToggleBtn");
     const panel = el.querySelector(".detailPanel");
 
+    if (Number(uiState.density || 1) === 2) {
+  // 他の開いてる詳細を閉じる
+  qs("#productList").querySelectorAll(".detailPanel.open").forEach(pn => {
+    pn.classList.remove("open");
+    pn.style.display = "none";
+  });
+  qs("#productList").querySelectorAll(".itemCard.detailOpen").forEach(card => {
+    card.classList.remove("detailOpen");
+  });
+  qs("#productList").querySelectorAll(".detailToggleBtn .chev").forEach(ch => {
+    ch.textContent = "▼";
+  });
+}
+
     if (!sold) {
       btn.addEventListener("click", async () => {
         const isOpen = panel.classList.contains("open");
@@ -350,18 +375,24 @@ function renderProductList() {
           panel.classList.remove("open");
           panel.style.display = "none";
           btn.querySelector(".chev").textContent = "▼";
+
+          el.classList.remove("detailOpen"); // ★追加：全幅解除
           return;
         }
+
         panel.classList.add("open");
         panel.style.display = "block";
         btn.querySelector(".chev").textContent = "▲";
+
+        const dense = Number(uiState.density || 1) === 2;
+        if (dense) el.classList.add("detailOpen"); // ★追加：2列ぶんにする
+
         await ensureProductDetailLoaded(p.product_id, panel);
+
+
+        list.appendChild(el);
       });
     }
-
-    list.appendChild(el);
-  });
-}
 
 async function ensureProductDetailLoaded(productId, panelEl) {
   // キャッシュが有効なら表示
@@ -827,4 +858,5 @@ qs("#btnLoadLast").addEventListener("click", async () => {
   const last = localStorage.getItem(LS_LAST_ORDER_ID) || "";
   qs("#btnLoadLast").style.display = last ? "" : "none";
 })();
+
 
