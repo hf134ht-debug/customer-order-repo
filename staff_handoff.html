@@ -400,6 +400,26 @@ header.appHeader{
   flex: 0 0 auto !important;
 }
 </style>
+<style>
+/* ===== HOTFIX v1b: mobileで商品名だけ透明になるのを強制解除 ===== */
+.card .list .lineName{
+  color:#111 !important;
+
+  /* 透明化の犯人を殺す */
+  background: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  -webkit-text-fill-color: #111 !important;
+
+  /* 念のため */
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+</style>
 
 </body>
 </html>
+
