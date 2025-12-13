@@ -23,9 +23,24 @@ function statusJa(st){
   return m[st] || st;
 }
 
-let viewMonth = new Date();        // 表示中の月
-let hasDaysSet = {};               // "YYYY-MM-DD" => true
-let selectedDay = new Date();      // 選択日
+// 秒を消して見やすく：
+// "2025-12-13 06:52:01" → "2025/12/13 06:52"
+function formatNoSeconds(dtStr){
+  if(!dtStr) return "";
+  let s = String(dtStr).trim();
+
+  // 形式ゆれ吸収
+  s = s.replace("T"," ").replace(/-/g,"/");
+
+  // 秒があるなら削る
+  s = s.replace(/(\d{1,2}:\d{2}):\d{2}/, "$1");
+
+  return s;
+}
+
+let viewMonth = new Date();
+let hasDaysSet = {};     // "YYYY-MM-DD" => true
+let selectedDay = new Date();
 
 async function fetchMonthDays(monthStr){
   const url = new URL(GAS_WEB_APP_URL);
@@ -37,7 +52,7 @@ async function fetchMonthDays(monthStr){
   if (!json.ok) throw new Error(json.error || "getOrdersMonthDays failed");
 
   hasDaysSet = {};
-  (json.days || []).forEach(d => hasDaysSet[d] = true);
+  (json.days || []).forEach(d => { hasDaysSet[d] = true; });
 }
 
 function renderCalendar(){
@@ -45,7 +60,7 @@ function renderCalendar(){
   $("calDow").innerHTML = DOW.map(x => `<div class="dow">${x}</div>`).join("");
 
   const first = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 1);
-  const startDow = first.getDay(); // 0..6
+  const startDow = first.getDay();
   const start = new Date(first);
   start.setDate(first.getDate() - startDow);
 
@@ -60,32 +75,40 @@ function renderCalendar(){
     const dStr = ymd(d);
     const inMonth = d.getMonth() === viewMonth.getMonth();
     const has = !!hasDaysSet[dStr];
+
+    // 重要：選択日は has より強く見せる
     const cls = [
       "day",
       inMonth ? "" : "off",
-      has ? "has" : "",
-      dStr === selStr ? "sel" : "",
+      (!inMonth ? "" : (dStr === selStr ? "sel" : (has ? "has" : ""))),
       dStr === todayStr ? "today" : ""
     ].filter(Boolean).join(" ");
 
-    html += `<div class="${cls}" data-date="${dStr}">${d.getDate()}</div>`;
+    html += `<div class="${cls}" data-date="${dStr}">
+      <div>${d.getDate()}</div>
+      ${(!inMonth ? "" : (has ? `<div class="dot"></div>` : ""))}
+    </div>`;
   }
   $("calGrid").innerHTML = html;
 
-  // クリック
   $("calGrid").querySelectorAll(".day").forEach(el => {
     el.addEventListener("click", async () => {
-      const dStr = el.getAttribute("data-date");
-      // 月外は月移動してから選択
-      const d = new Date(dStr + "T00:00:00");
-      if (d.getMonth() !== viewMonth.getMonth()){
+      if (el.classList.contains("off")) {
+        // 月外でも押せるが、月移動してから選択
+        const dStr = el.getAttribute("data-date");
+        const d = new Date(dStr + "T00:00:00");
         viewMonth = new Date(d.getFullYear(), d.getMonth(), 1);
         await loadMonthAndRender(false);
+        selectedDay = d;
+      } else {
+        const dStr = el.getAttribute("data-date");
+        selectedDay = new Date(dStr + "T00:00:00");
       }
-      selectedDay = d;
-      $("pickedLabel").textContent = `選択日：${dStr}`;
-      await loadDayOrders(dStr);
-      renderCalendar(); // 選択枠更新
+
+      const s = ymd(selectedDay);
+      $("pickedLabel").textContent = `選択日：${s}`;
+      await loadDayOrders(s);
+      renderCalendar();
     });
   });
 }
@@ -124,16 +147,17 @@ function renderList(orders){
       </div>
     `).join("");
 
+    const created = formatNoSeconds(o.created_at);
+
     return `
       <div class="card">
         <div class="row">
           <div>
             <div style="font-weight:900;">
-              #${escapeHtml(o.display_no)}　${statusJa(o.status)}
+              #${escapeHtml(o.display_no)}
+              <span class="st ${escapeHtml(o.status)}">${escapeHtml(statusJa(o.status))}</span>
             </div>
-            <div class="sub">
-              ${escapeHtml(o.created_at)}
-            </div>
+            <div class="sub">${escapeHtml(created)}</div>
           </div>
           <div style="font-weight:900;">¥${Number(o.total||0).toLocaleString()}</div>
         </div>
@@ -169,7 +193,6 @@ async function cancelOrder(orderId){
     const json = await res.json();
     if(!json.ok) throw new Error(json.error || "cancel failed");
 
-    // 再読込
     const dStr = ymd(selectedDay);
     await loadMonthAndRender(true);
     await loadDayOrders(dStr);
@@ -184,7 +207,6 @@ async function loadMonthAndRender(keepSelected){
   try{
     await fetchMonthDays(monthStr);
 
-    // 選択日が月外なら月初に合わせる
     if(!keepSelected){
       selectedDay = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 1);
       $("pickedLabel").textContent = `選択日：${ymd(selectedDay)}`;
@@ -197,7 +219,6 @@ async function loadMonthAndRender(keepSelected){
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // 初期：今月/今日
   const now = new Date();
   viewMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   selectedDay = now;
