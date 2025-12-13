@@ -208,6 +208,18 @@ function renderCard(o, compact, isRankMode, index) {
   ` : "";
 
   el.innerHTML = `
+    // ✅ iPhone対策：商品名が消えるのをJSで強制的に潰す（CSS競合を無視）
+  el.querySelectorAll(".lineName").forEach(n => {
+    n.style.color = "#111";
+    n.style.background = "none";
+    n.style.opacity = "1";
+    n.style.visibility = "visible";
+    n.style.display = "block";
+    n.style.minWidth = "0";
+    // Safariの“文字が透明化”対策
+    n.style.webkitTextFillColor = "#111";
+  });
+
     <div class="row">
       <div>
         <div class="name">No.${Number(o.display_no||0)}</div>
@@ -628,3 +640,4 @@ qs("#mCancel")?.addEventListener("click", async () => { if (editingOrder) await 
   // “読み込み中…” を確実に出す
   await refresh({ silent:false });
 })();
+
