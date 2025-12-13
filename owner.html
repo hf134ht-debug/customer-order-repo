@@ -166,11 +166,17 @@
         <div class="swRow">
           <span class="swLabel">注文受付</span>
 
+          <label class="toggle toggleSold" style="position:relative;">
+            <input class="soldToggle" type="checkbox" ...>
+            <span class="track"><span class="knob"></span></span>
+          </label>
+
           <!-- ✅ トグル（営業/閉店） -->
-          <label class="toggle" title="注文受付のON/OFF">
+          <label class="toggle toggleShop" title="注文受付のON/OFF">
             <input id="ownerShopToggle" type="checkbox" />
             <span class="track"><span class="knob"></span></span>
           </label>
+
 
           <span id="ownerShopState" class="toggleText off">受付停止</span>
         </div>
@@ -240,3 +246,4 @@
   <script src="./owner.js?v=2"></script>
 </body>
 </html>
+
