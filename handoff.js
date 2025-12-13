@@ -615,12 +615,18 @@ async function initShopToggle_() {
   if (!btn) return;
 
   btn.addEventListener("click", async () => {
-    try {
-      const r = await apiPost({ mode: "toggleShopOpen" });
-      if (r.ok) renderShopState_(!!r.SHOP_OPEN);
-    } catch {}
-  });
-}
+  try {
+    // 現在の表示から「次にどうなるか」を判定
+    const isOpenNow = qs("#shopState")?.classList.contains("badge-open");
+    const nextLabel = isOpenNow ? "閉店（受付停止）" : "開店（受付再開）";
+    const msg = `${nextLabel}に切り替えます。\nよろしいですか？`;
+
+    if (!confirm(msg)) return; // ✅確認
+
+    const r = await apiPost({ mode: "toggleShopOpen" });
+    if (r.ok) renderShopState_(!!r.SHOP_OPEN);
+  } catch {}
+});
 
 /* ===== events ===== */
 function bindEventsOnce() {
@@ -670,4 +676,5 @@ function bindEventsOnce() {
   initShopToggle_();
   refresh({ silent: false });
 })();
+
 
