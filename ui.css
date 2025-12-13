@@ -39,25 +39,12 @@
 html,body{ height:100%; }
 body{
   margin:0;
-  font-family: "Inter", "Noto Sans JP", system-ui, -apple-system, "Segoe UI",
-               "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  font-family: "Inter","Noto Sans JP",system-ui,-apple-system,"Segoe UI",
+               "Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
   color: var(--ink);
-  font-weight: 700; /* 全体の標準を少し太めに */
-   }
+  font-weight: 700;
 
-/* 主要テキストは太字固定（あなたの“太い”感じに戻す） */
-.brandTitle,
-.navItem,
-.pill,
-.btn,
-.name,
-.price,
-.lineName,
-.lineQty,
-.lineSum{
-  font-weight: var(--fw) !important;
-}
-
+  /* ✅ background は必ず body の中へ */
   background:
     radial-gradient(900px 600px at 15% -10%, rgba(168,85,247,.10), transparent 55%),
     radial-gradient(900px 600px at 110% 10%, rgba(34,211,238,.10), transparent 55%),
@@ -1043,4 +1030,114 @@ header{
   .inp{ min-width:140px; }
 }
 
+/* =========================================================
+   HISTORY (calendar) - UI統一（機能はそのまま）
+========================================================= */
+.histCalCard{ padding:14px; }
 
+.histCalHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.histCalTitle{
+  font-weight:1100;
+  font-size:18px;
+  letter-spacing:.3px;
+}
+
+.histLegend{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  flex-wrap:wrap;
+  font-size:12px;
+  opacity:.9;
+  margin:10px 0 8px;
+}
+
+.histLegend .lg{ display:flex; gap:6px; align-items:center; }
+.histLegend .sw{
+  width:14px;height:14px;border-radius:6px;
+  border:2px solid rgba(255,255,255,.25);
+  background: rgba(255,255,255,.10);
+}
+.histLegend .sw.has{ background: rgba(67,199,255,.22); border-color: rgba(67,199,255,.55); }
+.histLegend .sw.sel{ background: rgba(51,209,122,.22); border-color: rgba(51,209,122,.60); }
+.histLegend .sw.off{ background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.15); }
+
+.histCalGrid{ display:flex; flex-direction:column; gap:6px; }
+#calDow, #calGrid{
+  display:grid;
+  grid-template-columns:repeat(7, 1fr);
+  gap:8px;
+}
+
+#calDow .dow{
+  text-align:center;
+  font-size:12px;
+  color: rgba(255,255,255,.70);
+}
+
+#calGrid .day{
+  height:54px;
+  border-radius:16px;
+  border:2px solid rgba(255,255,255,.16);
+  background: rgba(255,255,255,.10);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  user-select:none;
+  position:relative;
+  font-weight:1000;
+  box-shadow: 0 10px 22px rgba(0,0,0,.14);
+}
+
+#calGrid .day.off{
+  opacity:.45;
+  cursor:default;
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.10);
+}
+
+#calGrid .day.has{
+  background: rgba(67,199,255,.20);
+  border-color: rgba(67,199,255,.55);
+  box-shadow: 0 0 0 4px rgba(67,199,255,.12), 0 10px 22px rgba(0,0,0,.16);
+}
+
+#calGrid .day.sel{
+  background: rgba(51,209,122,.20);
+  border-color: rgba(51,209,122,.60);
+  box-shadow: 0 0 0 4px rgba(51,209,122,.12), 0 10px 22px rgba(0,0,0,.16);
+}
+
+#calGrid .day.today::after{
+  content:"今日";
+  position:absolute;
+  top:6px; right:8px;
+  font-size:10px;
+  opacity:.8;
+}
+
+#calGrid .dot{
+  position:absolute;
+  bottom:7px;
+  width:8px;height:8px;border-radius:50%;
+  background: rgba(67,199,255,.95);
+}
+#calGrid .day.sel .dot{ background: rgba(51,209,122,.95); }
+
+/* historyのリストは「card」を使ってるならそのまま。
+   history.js が .card を出していない場合でも、最低限の余白を確保 */
+#list{ padding-bottom: 12px; }
+
+/* スマホ最適化 */
+@media (max-width:520px){
+  #calGrid .day{ height:50px; border-radius:14px; }
+  .histCalTitle{ font-size:16px; }
+}
