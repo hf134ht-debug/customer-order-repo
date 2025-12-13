@@ -1168,3 +1168,70 @@ header{
   border-width: 2px !important;
 }
 
+/* =========================================================
+   HISTORY calendar: readability mode (light cells + dark text)
+========================================================= */
+
+/* カレンダー全体を少し明るく */
+.histCalCard{
+  background: rgba(255,255,255,.92) !important;
+  border: 2px solid rgba(17,24,39,.10) !important;
+}
+
+/* 曜日 */
+#calDow .dow{
+  color: rgba(17,24,39,.70) !important;
+  font-weight: 1000 !important;
+}
+
+/* 日付マス：白寄り＋黒文字で固定（ここが本命） */
+#calGrid .day{
+  background: rgba(255,255,255,.96) !important;
+  border: 2px solid rgba(17,24,39,.12) !important;
+  box-shadow: 0 8px 18px rgba(0,0,0,.10) !important;
+
+  color: #111827 !important;
+  -webkit-text-fill-color: #111827 !important;
+  text-shadow: none !important;
+
+  opacity: 1 !important;
+  visibility: visible !important;
+  font-weight: 1100 !important;
+}
+
+/* 月外：薄くして区別 */
+#calGrid .day.off{
+  background: rgba(17,24,39,.04) !important;
+  border-color: rgba(17,24,39,.08) !important;
+  color: rgba(17,24,39,.35) !important;
+  -webkit-text-fill-color: rgba(17,24,39,.35) !important;
+}
+
+/* データあり：水色のハイライト（強め） */
+#calGrid .day.has{
+  background: rgba(67,199,255,.22) !important;
+  border-color: rgba(67,199,255,.70) !important;
+  box-shadow: 0 0 0 4px rgba(67,199,255,.18), 0 10px 22px rgba(0,0,0,.12) !important;
+}
+
+/* 選択日：緑のハイライト（強め） */
+#calGrid .day.sel{
+  background: rgba(51,209,122,.24) !important;
+  border-color: rgba(51,209,122,.78) !important;
+  box-shadow: 0 0 0 4px rgba(51,209,122,.18), 0 10px 22px rgba(0,0,0,.12) !important;
+}
+
+/* 今日ラベル：黒文字に */
+#calGrid .day.today::after{
+  color: rgba(17,24,39,.55) !important;
+}
+
+/* dot も見えやすく（白背景用） */
+#calGrid .dot{
+  background: rgba(22,119,255,.95) !important;
+}
+#calGrid .day.sel .dot{
+  background: rgba(22,163,74,.95) !important;
+}
+
+
