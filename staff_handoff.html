@@ -416,6 +416,54 @@ body{
 #btnToggleShop.btn-close{ color:#fff !important; }
 #btnToggleShop.btn-open{  color:#fff !important; }
 
+    /* 内訳の金額：ネオン禁止 → 単色に */
+.card .list .lineSum{
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  color: rgba(255,255,255,.92) !important; /* ダーク背景なら白寄りが“黒扱い”で見やすい */
+  text-shadow: none !important;
+}
+
+    /* ===== POP & STYLISH: card borders heavier ===== */
+.card{
+  position: relative;
+  border-radius: 22px !important;
+
+  /* 外枠を太く */
+  border: 4px solid rgba(255,255,255,.26) !important;
+
+  /* 外側の縁の存在感（影は軽め） */
+  box-shadow: 0 14px 40px rgba(0,0,0,.28) !important;
+
+  /* 余白を少し増やして“枠が太いのに詰まらない” */
+  padding: 16px !important;
+
+  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.05)) !important;
+}
+
+/* 内枠（2重目）を太く：擬似要素で作る */
+.card::before{
+  content:"";
+  position:absolute;
+  inset: 8px;                   /* 外枠との間隔＝“枠の太さ感” */
+  border-radius: 18px;
+  border: 3px solid rgba(34,211,238,.30); /* 内枠は少し色味を変えて夜市っぽく */
+  pointer-events:none;
+}
+
+/* カード内の区切り線も太めにしてポップに */
+.card .divider{
+  height: 2px !important;
+  background: rgba(255,255,255,.18) !important;
+}
+
+/* カード内訳行も枠太めに（ポップ感） */
+.card .list .lineRow{
+  border-width: 2px !important;
+  border-color: rgba(255,255,255,.18) !important;
+}
+
   </style>
 
   <link rel="stylesheet" href="./ui_dark.css?v=2">
@@ -544,12 +592,3 @@ body{
 <script src="./ui.js?v=1"></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
