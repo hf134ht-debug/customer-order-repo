@@ -299,7 +299,6 @@ function renderProductList() {
 
     const soldBadge = sold
       ? `<span class="pill on" style="margin-left:8px;">売切</span>`
-      : `<span class="pill off" style="margin-left:8px;color:#111;">販売中</span>`;
 
     el.innerHTML = `
       <div class="row">
@@ -862,6 +861,7 @@ qs("#btnLoadLast").addEventListener("click", async () => {
   const last = localStorage.getItem(LS_LAST_ORDER_ID) || "";
   qs("#btnLoadLast").style.display = last ? "" : "none";
 })();
+
 
 
 
