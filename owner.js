@@ -8,8 +8,10 @@ function escapeHtml(s) {
 }
 
 function msg(text, isErr=true){
-  $("msg").textContent = text || "";
-  $("msg").style.color = isErr ? "#c00" : "#0a7";
+  const el = $("msg");
+  if (!el) return;
+  el.textContent = text || "";
+  el.style.color = isErr ? "#c00" : "#0a7";
 }
 
 async function apiGet(params){
@@ -34,11 +36,12 @@ async function apiPost(body){
   return await res.json();
 }
 
+/* ===== products table ===== */
 let current = [];
 
 async function load(){
   msg("");
-  $("tbody").innerHTML = "<tr><td colspan='6'>読み込み中...</td></tr>";
+  if ($("tbody")) $("tbody").innerHTML = "<tr><td colspan='6'>読み込み中...</td></tr>";
 
   try{
     const json = await apiGet({ mode:"getProductsAdmin" });
@@ -46,22 +49,27 @@ async function load(){
     current = json.products || [];
     render();
   }catch(e){
-    $("tbody").innerHTML = "";
-    msg("取得エラー: " + e.message, true);
+    if ($("tbody")) $("tbody").innerHTML = "";
+    msg("取得エラー: " + (e?.message || String(e)), true);
   }
 }
 
 function render(){
+  const tbody = $("tbody");
+  if(!tbody) return;
+
   if(!current.length){
-    $("tbody").innerHTML = "<tr><td colspan='6'>商品がありません</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='6'>商品がありません</td></tr>";
     return;
   }
 
-  $("tbody").innerHTML = current.map(p => {
+  tbody.innerHTML = current.map(p => {
     const sold = !!p.sold_out;
+    const pidEsc = escapeHtml(p.product_id);
+
     return `
-      <tr data-id="${escapeHtml(p.product_id)}">
-        <td>${escapeHtml(p.product_id)}</td>
+      <tr data-id="${pidEsc}">
+        <td>${pidEsc}</td>
         <td><input data-k="name" value="${escapeHtml(p.name)}"></td>
         <td><input data-k="price" type="number" value="${Number(p.price||0)}"></td>
         <td><input data-k="sort_order" type="number" value="${Number(p.sort_order||0)}"></td>
@@ -70,9 +78,9 @@ function render(){
         </td>
         <td>
           <div class="rowbtn">
-            <button onclick="saveRow('${escapeHtml(p.product_id)}')">保存</button>
-            <button onclick="toggleSoldOut('${escapeHtml(p.product_id)}', ${sold ? "false":"true"})">${sold ? "売切解除":"売切"}</button>
-            <button onclick="delRow('${escapeHtml(p.product_id)}')">削除</button>
+            <button class="btn" onclick="saveRow('${pidEsc}')">保存</button>
+            <button class="btn" onclick="toggleSoldOut('${pidEsc}', ${sold ? "false":"true"})">${sold ? "売切解除":"売切"}</button>
+            <button class="btn btnDanger" onclick="delRow('${pidEsc}')">削除</button>
           </div>
         </td>
       </tr>
@@ -102,7 +110,7 @@ window.saveRow = async function(productId){
     msg("保存しました", false);
     await load();
   }catch(e){
-    msg("保存エラー: " + e.message, true);
+    msg("保存エラー: " + (e?.message || String(e)), true);
   }
 };
 
@@ -114,7 +122,7 @@ window.toggleSoldOut = async function(productId, soldOut){
     msg("更新しました", false);
     await load();
   }catch(e){
-    msg("更新エラー: " + e.message, true);
+    msg("更新エラー: " + (e?.message || String(e)), true);
   }
 };
 
@@ -127,22 +135,22 @@ window.delRow = async function(productId){
     msg("削除しました", false);
     await load();
   }catch(e){
-    msg("削除エラー: " + e.message, true);
+    msg("削除エラー: " + (e?.message || String(e)), true);
   }
 };
 
 async function addOrUpdate(){
-  const id = String($("add_id").value || "").trim();
+  const id = String($("add_id")?.value || "").trim();
   if(!id){ msg("商品IDは必須です", true); return; }
 
   const p = {
     product_id: id,
-    name: String($("add_name").value || "").trim(),
-    price: Number($("add_price").value || 0),
-    sort_order: Number($("add_sort").value || 0),
-    description: String($("add_desc").value || ""),
-    image_url: String($("add_img").value || ""),
-    video_url: String($("add_vid").value || ""),
+    name: String($("add_name")?.value || "").trim(),
+    price: Number($("add_price")?.value || 0),
+    sort_order: Number($("add_sort")?.value || 0),
+    description: String($("add_desc")?.value || ""),
+    image_url: String($("add_img")?.value || ""),
+    video_url: String($("add_vid")?.value || ""),
   };
 
   try{
@@ -158,7 +166,7 @@ async function addOrUpdate(){
 
     await load();
   }catch(e){
-    msg("保存エラー: " + e.message, true);
+    msg("保存エラー: " + (e?.message || String(e)), true);
   }
 }
 
@@ -171,13 +179,13 @@ async function resetSoldOutAll(){
     msg("全解除しました", false);
     await load();
   }catch(e){
-    msg("全解除エラー: " + e.message, true);
+    msg("全解除エラー: " + (e?.message || String(e)), true);
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  function renderOwnerShopState_(open){
-  const el = document.getElementById("ownerShopState");
+/* ===== ops settings ===== */
+function renderOwnerShopState_(open){
+  const el = $("ownerShopState");
   if(!el) return;
   el.textContent = open ? "営業中" : "受付停止";
   el.style.color = open ? "#0a7" : "#c00";
@@ -186,49 +194,50 @@ document.addEventListener("DOMContentLoaded", () => {
 async function loadOpsSettings_(){
   const s = await apiGet({ mode:"getSettings" });
   if(!s.ok) throw new Error(s.error || "getSettings failed");
-  renderOwnerShopState_(!!s.settings.SHOP_OPEN);
+  renderOwnerShopState_(!!(s.settings && s.settings.SHOP_OPEN));
 
-  const autoMin = document.getElementById("autoMin");
-  if(autoMin) autoMin.value = String(s.settings.AUTO_HANDOFF_MIN || 60);
+  const autoMin = $("autoMin");
+  if(autoMin) autoMin.value = String((s.settings && s.settings.AUTO_HANDOFF_MIN) || 60);
 }
 
+/* ===== init ===== */
 document.addEventListener("DOMContentLoaded", async () => {
+  if(!GAS_WEB_APP_URL || !GAS_WEB_APP_URL.includes("script.google.com")){
+    msg("GAS_WEB_APP_URL が未設定です", true);
+    return;
+  }
+
+  // ops settings
   try{
     await loadOpsSettings_();
 
-    const t = document.getElementById("ownerToggleShop");
-    if(t) t.addEventListener("click", async ()=>{
+    $("ownerToggleShop")?.addEventListener("click", async ()=>{
       const r = await apiPost({ mode:"toggleShopOpen" });
       if(r.ok) renderOwnerShopState_(!!r.SHOP_OPEN);
     });
 
-    const save = document.getElementById("saveOps");
-    if(save) save.addEventListener("click", async ()=>{
-      const autoMin = Number(document.getElementById("autoMin")?.value || 60);
-      const staffLimit = Number(document.getElementById("staffLimit")?.value || 6);
+    $("saveOps")?.addEventListener("click", async ()=>{
+      const autoMin = Number($("autoMin")?.value || 60);
 
       const r = await apiPost({
         mode:"setSettings",
-        settings:{
-          AUTO_HANDOFF_MIN:autoMin,
-        }
+        settings:{ AUTO_HANDOFF_MIN:autoMin }
       });
+
       if(!r.ok) throw new Error(r.error || "setSettings failed");
       msg("設定を保存しました", false);
+      await loadOpsSettings_();
     });
 
   }catch(e){
-    msg("設定取得エラー: " + e.message, true);
+    msg("設定取得エラー: " + (e?.message || String(e)), true);
   }
+
+  // product controls
+  $("btnReload")?.addEventListener("click", load);
+  $("btnAdd")?.addEventListener("click", addOrUpdate);
+  $("btnResetSoldOut")?.addEventListener("click", resetSoldOutAll);
+
+  // initial load
+  await load();
 });
-
-  $("btnReload").addEventListener("click", load);
-  $("btnAdd").addEventListener("click", addOrUpdate);
-  $("btnResetSoldOut").addEventListener("click", resetSoldOutAll);
-  load();
-});
-
-
-
-
-
