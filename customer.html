@@ -1,7 +1,6 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <link rel="stylesheet" href="./ui_dark.css?v=1">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>お客さん用レジ</title>
@@ -10,7 +9,7 @@
     body { margin:0; font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif; background:var(--bg); color:var(--text); }
     header { position:sticky; top:0; z-index:5; background:rgba(247,247,251,.92); backdrop-filter: blur(10px); border-bottom:1px solid var(--line); }
     .wrap { max-width: 720px; margin:0 auto; padding: 10px 12px 90px; }
-    .topbar { display:flex; align-items:center; justify-content:space-between; gap:10px; padding: 10px 0; }
+    .topbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding: 10px 0; flex-wrap:nowrap; }
     .title { font-weight: 800; font-size: 18px; }
     .pill { padding: 6px 10px; border:1px solid var(--line); border-radius: 999px; background:var(--card); font-weight:700; }
     .totalTop { font-size: 18px; }
@@ -62,7 +61,12 @@
     .inline { display:flex; gap:8px; align-items:center; }
 
     .bannerEdit { margin-top: 6px; }
+    @media (max-width: 520px){
+  .topbar{ flex-wrap:wrap; }
+}
   </style>
+
+  <link rel="stylesheet" href="./ui_dark.css?v=2">
 </head>
 
 <body>
@@ -139,5 +143,6 @@
   <script src="./ui.js?v=1"></script>
 </body>
 </html>
+
 
 
