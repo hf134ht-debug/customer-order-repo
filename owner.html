@@ -5,53 +5,135 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>設定（オーナー）</title>
 
-  <!-- ✅ 統一CSS -->
   <link rel="stylesheet" href="./ui.css?v=1">
 
   <style>
-    /* owner だけ必要な最小テーブル調整（機能に影響なし） */
-    .ownerBar{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    .ownerTable{ width:100%; border-collapse:collapse; margin-top:10px; }
+    /* ===== owner: layout safe ===== */
+    .card{ overflow:hidden; } /* はみ出し防止 */
+    .ownerBar{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+
+    /* messages */
+    #msg{ white-space:pre-wrap; }
+
+    /* ===== Toggle Switch ===== */
+    .swRow{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .swLabel{ font-weight:1100; }
+
+    .toggle{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .toggle input{
+      position:absolute;
+      opacity:0;
+      pointer-events:none;
+    }
+    .track{
+      width:56px;
+      height:34px;
+      border-radius:999px;
+      border:2px solid rgba(255,255,255,.35);
+      background: rgba(0,0,0,.16);
+      position:relative;
+      box-shadow: 0 10px 22px rgba(0,0,0,.12);
+      flex:0 0 auto;
+    }
+    .knob{
+      position:absolute;
+      top:50%;
+      left:4px;
+      transform: translateY(-50%);
+      width:26px;
+      height:26px;
+      border-radius:999px;
+      background:#fff;
+      box-shadow: 0 8px 16px rgba(0,0,0,.18);
+      transition: left .14s ease;
+    }
+    .toggle input:checked + .track{
+      background: rgba(51,209,122,.22);
+      border-color: rgba(51,209,122,.55);
+    }
+    .toggle input:checked + .track .knob{ left:26px; }
+
+    .toggleText{
+      font-weight:1100;
+      padding:6px 10px;
+      border-radius:999px;
+      border:2px solid rgba(17,24,39,.12);
+      background: rgba(255,255,255,.92);
+      color:#111;
+      white-space:nowrap;
+    }
+    .toggleText.on{
+      background:#dbffe5;
+      border-color:#1faa59;
+      color:#111;
+    }
+    .toggleText.off{
+      background:#ffe8c7;
+      border-color:#f59e0b;
+      color:#111;
+    }
+
+    /* ===== Table ===== */
+    .tableWrap{ width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    .ownerTable{ width:100%; border-collapse:collapse; margin-top:10px; min-width:780px; }
     .ownerTable th,.ownerTable td{
       border-bottom:1px dashed rgba(17,24,39,.12);
       padding:10px 8px;
       vertical-align:top;
     }
     .ownerTable th{ font-size:12px; opacity:.75; text-align:left; }
-    .w80{ width:80px; } .w120{ width:120px; } .w160{ width:160px; }
+    .w120{ width:120px; }
+    .w160{ width:160px; }
 
-    /* ui.css の input 定義を活かすため classは付けない（IDのまま） */
+    /* inputs in table: never overflow */
+    .ownerTable input{
+      width:100%;
+      min-width:0;
+    }
+
     .rowbtn{ display:flex; gap:8px; flex-wrap:wrap; }
-    .pill{
-      display:inline-block;
-      font-size:12px;
-      padding:4px 10px;
-      border-radius:999px;
-      border:2px solid rgba(17,24,39,.14);
-      background:#fff;
-      font-weight:1000;
-    }
-    .pill.on{ background:#ffe8c7; border-color:#f59e0b; }
-    .pill.off{ background:#dbffe5; border-color:#1faa59; }
 
-    .ownerGrid{ display:grid; grid-template-columns:160px 1fr; gap:10px; align-items:center; }
-    @media (max-width:520px){
-      .ownerGrid{ grid-template-columns:1fr; }
+    /* ===== Mobile: table -> card rows (no overflow) ===== */
+    @media (max-width: 760px){
+      .tableWrap{ overflow:visible; }
+      .ownerTable{ min-width:0; width:100%; display:block; }
+      .ownerTable thead{ display:none; }
+      .ownerTable tbody{ display:block; }
+      .ownerTable tr{
+        display:block;
+        border:3px solid rgba(67,199,255,.22);
+        border-radius:18px;
+        padding:12px;
+        margin:12px 0;
+        background:#fff;
+        box-shadow: 0 10px 22px rgba(0,0,0,.14);
+      }
+      .ownerTable td{
+        display:block;
+        border-bottom:none;
+        padding:8px 0;
+      }
+      .cellLabel{
+        display:block;
+        font-size:12px;
+        opacity:.75;
+        margin-bottom:6px;
+      }
+      .rowbtn{ justify-content:flex-start; }
+      .rowbtn .btn{ width:auto; }
+      .ownerIdLine{
+        font-weight:1100;
+        font-size:16px;
+        letter-spacing:.2px;
+        margin-bottom:4px;
+      }
     }
-
-    /* select も ui.css の見た目に寄せる */
-    select{
-      border:2px solid rgba(255,255,255,.50);
-      background: rgba(255,255,255,.92);
-      color:#111;
-      padding:10px 12px;
-      border-radius:14px;
-      font-weight:1000;
-    }
-    /* ===== owner：販売中テキストは黒固定 ===== */
-.pill.off{
-  color:#111 !important;
-}
   </style>
 
   <script>
@@ -60,12 +142,10 @@
 </head>
 
 <body>
-  <!-- ✅ 共通ヘッダー -->
   <header class="appHeader">
     <div class="wrap">
       <div class="headRow">
         <div class="brandTitle">OWNER</div>
-
         <nav class="topNav">
           <a class="navItem" href="./staff_handoff.html">受け渡し</a>
           <a class="navItem" href="./history.html">履歴</a>
@@ -83,31 +163,26 @@
       <section class="card">
         <div class="sectionTitle" style="margin:0 0 10px;">運用設定</div>
 
-        <div class="ownerGrid">
-          <div>注文受付</div>
-          <div class="ownerBar">
-            <span id="ownerShopState" style="font-weight:1100;"></span>
-            <button class="btn" id="ownerToggleShop">閉店/営業切替</button>
-          </div>
+        <div class="swRow">
+          <span class="swLabel">注文受付</span>
 
-          <div>自動受け渡し（分）</div>
-          <div>
-            <select id="autoMin">
-              <option value="30">30</option>
-              <option value="60">60</option>
-              <option value="90">90</option>
-            </select>
-          </div>
+          <!-- ✅ トグル（営業/閉店） -->
+          <label class="toggle" title="注文受付のON/OFF">
+            <input id="ownerShopToggle" type="checkbox" />
+            <span class="track"><span class="knob"></span></span>
+          </label>
+
+          <span id="ownerShopState" class="toggleText off">受付停止</span>
         </div>
 
-        <div class="actions" style="justify-content:flex-start;">
-          <button class="btn" id="saveOps">設定を保存</button>
+        <div class="muted" style="margin-top:10px;">
+          ※ 変更時に確認が出ます。切り替え履歴は下のログに残ります。
         </div>
 
-        <div id="msg" class="msg" style="margin-top:10px;"></div>
+        <div id="msg" class="msg" style="margin-top:12px;"></div>
       </section>
 
-      <!-- 商品編集ツールバー -->
+      <!-- 商品マスタ -->
       <section class="card">
         <div class="toolRow" style="padding:0;">
           <div class="toolLeft">
@@ -120,34 +195,38 @@
           </div>
         </div>
 
-        <table class="ownerTable">
-          <thead>
-            <tr>
-              <th class="w120">商品ID</th>
-              <th>商品名</th>
-              <th class="w120">価格</th>
-              <th class="w120">表示順</th>
-              <th class="w120">売切</th>
-              <th class="w160">操作</th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
+        <div class="tableWrap">
+          <table class="ownerTable">
+            <thead>
+              <tr>
+                <th class="w120">商品ID</th>
+                <th>商品名</th>
+                <th class="w120">価格</th>
+                <th class="w120">表示順</th>
+                <th class="w160">売切/販売中</th>
+                <th class="w160">操作</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
       </section>
 
       <!-- 商品追加 / 更新 -->
       <section class="card">
         <div class="sectionTitle" style="margin:0 0 10px;">商品追加 / 更新</div>
 
-        <div class="ownerGrid" style="grid-template-columns:160px 1fr;">
-          <div>説明</div><input id="add_desc" placeholder="説明">
-          <div>画像URL</div><input id="add_img" placeholder="https://...">
-          <div>動画URL</div><input id="add_vid" placeholder="https://...">
+        <div class="grid" style="gap:10px;">
+          <div class="muted">説明</div><input id="add_desc" placeholder="説明">
+          <div class="muted">画像URL</div><input id="add_img" placeholder="https://...">
+          <div class="muted">動画URL</div><input id="add_vid" placeholder="https://...">
+        </div>
 
-          <div>商品ID（必須）</div><input id="add_id" placeholder="例: P010">
-          <div>商品名</div><input id="add_name" placeholder="例: トルネードポテト（塩）">
-          <div>価格</div><input id="add_price" type="number" placeholder="例: 500">
-          <div>表示順</div><input id="add_sort" type="number" placeholder="例: 10">
+        <div class="grid" style="grid-template-columns:160px 1fr; gap:10px; margin-top:10px;">
+          <div class="muted">商品ID（必須）</div><input id="add_id" placeholder="例: P010">
+          <div class="muted">商品名</div><input id="add_name" placeholder="例: トルネードポテト（塩）">
+          <div class="muted">価格</div><input id="add_price" type="number" placeholder="例: 500">
+          <div class="muted">表示順</div><input id="add_sort" type="number" placeholder="例: 10">
         </div>
 
         <div class="actions" style="justify-content:flex-start;">
@@ -158,8 +237,6 @@
     </div>
   </main>
 
-  <script src="./owner.js?v=1"></script>
-  <!-- ✅ ui.js は以前 SyntaxError が出ていたので owner では読み込まない（機能に不要） -->
+  <script src="./owner.js?v=2"></script>
 </body>
 </html>
-
