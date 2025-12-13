@@ -15,6 +15,38 @@ const SUBMIT_TOKEN_KEY = "pos_submit_token";
 const SUBMIT_TOKEN_TS_KEY = "pos_submit_token_ts";
 const SUBMIT_TOKEN_TTL_MS = 2 * 60 * 1000; // 2分だけ有効
 
+async function apiGet(params) {
+  const u = new URL(GAS_WEB_APP_URL);
+  Object.entries(params || {}).forEach(([k, v]) => u.searchParams.set(k, String(v)));
+  u.searchParams.set("_ts", String(Date.now())); // キャッシュ回避
+  const res = await fetch(u.toString(), { method: "GET" });
+  const text = await res.text();
+
+  // JSON以外（HTML等）が返った時点で原因がわかるようにする
+  let json;
+  try { json = JSON.parse(text); }
+  catch { throw new Error(`JSONではありません: HTTP ${res.status}\n${text.slice(0, 200)}`); }
+
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return json;
+}
+
+async function apiPost(body) {
+  const res = await fetch(GAS_WEB_APP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body || {}),
+  });
+  const text = await res.text();
+
+  let json;
+  try { json = JSON.parse(text); }
+  catch { throw new Error(`JSONではありません: HTTP ${res.status}\n${text.slice(0, 200)}`); }
+
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return json;
+}
+
 function loadSubmitToken() {
   try {
     const t = (sessionStorage.getItem(SUBMIT_TOKEN_KEY) || "").trim();
@@ -402,7 +434,7 @@ function renderProductList() {
         const open = panel.classList.contains("open");
 
         // コンパクト時は「開ける前に他を閉じる」→ズレ事故防止
-        if (!open && isDense_()) {
+        if (!open && isCompact_()) {
           listEl.querySelectorAll(".detailPanel.open").forEach(pn => {
             pn.classList.remove("open");
             pn.style.display = "none";
@@ -423,7 +455,7 @@ function renderProductList() {
         panel.style.display = "block";
         btn.querySelector(".chev").textContent = "▲";
 
-        if (isDense_()) card.classList.add("detailOpen"); // 2列ぶん→全幅に
+        if (isCompact_()) card.classList.add("detailOpen");
 
         await ensureProductDetailLoaded(p.product_id, panel);
       });
@@ -896,6 +928,7 @@ qs("#btnLoadLast").addEventListener("click", async () => {
   const last = localStorage.getItem(LS_LAST_ORDER_ID) || "";
   qs("#btnLoadLast").style.display = last ? "" : "none";
 })();
+
 
 
 
