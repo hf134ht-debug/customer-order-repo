@@ -686,7 +686,8 @@ body{
       radial-gradient(820px 620px at 50% 120%,
         rgba(34, 197, 94, .16), transparent 62%),
       radial-gradient(980px 720px at 50% 55%,
-        rgba(255,255,255,.10), transparent 55%),
+        rgba(255,255,255,.13), transparent 55%),
       linear-gradient(180deg, #5b616c 0%, #4a4f58 45%, #444952 100%);
   }
 }
+
