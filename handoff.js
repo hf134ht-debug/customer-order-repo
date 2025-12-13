@@ -558,3 +558,42 @@ async function moveRank(index, delta) {
   }
   await refresh({ silent:false });
 })();
+
+async function apiGet_(params){
+  const url = new URL(GAS_WEB_APP_URL);
+  Object.keys(params).forEach(k=>url.searchParams.set(k, params[k]));
+  const r = await fetch(url.toString());
+  return await r.json();
+}
+async function apiPostForm_(obj){
+  const form = new URLSearchParams();
+  Object.keys(obj).forEach(k=>{
+    const v = obj[k];
+    form.set(k, typeof v === "object" ? JSON.stringify(v) : String(v));
+  });
+  const r = await fetch(GAS_WEB_APP_URL, { method:"POST", body: form });
+  return await r.json();
+}
+function renderShopState_(open){
+  const el = document.getElementById("shopState");
+  if (!el) return;
+  el.textContent = open ? "受付：営業中" : "受付：停止中";
+  el.style.color = open ? "#0a7" : "#c00";
+}
+async function initShopToggle_(){
+  const s = await apiGet_({ mode:"getSettings" });
+  if (s.ok) renderShopState_(!!s.settings.SHOP_OPEN);
+
+  const btn = document.getElementById("btnToggleShop");
+  if (!btn) return;
+  btn.addEventListener("click", async ()=>{
+    const r = await apiPostForm_({ mode:"toggleShopOpen" });
+    if (r.ok) renderShopState_(!!r.SHOP_OPEN);
+  });
+}
+
+// 既存のDOMContentLoaded内で呼ぶ（無ければ追加）
+document.addEventListener("DOMContentLoaded", () => {
+  initShopToggle_();
+});
+
