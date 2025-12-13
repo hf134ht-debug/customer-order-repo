@@ -315,23 +315,10 @@ function toYoutubeEmbed(url) {
 }
 
 function renderDetailPanel(panelEl, d) {
-  const desc =
-    String(d.description || d.description_text || d.desc || "").trim();
-  const img =
-    String(d.image_url || d.image || "").trim();
-  const vid =
-    String(d.video_url || d.video || d.movie || "").trim();
-
-  panelEl.innerHTML = `
-    ${desc ? `<div class="desc">${escapeHtml(desc)}</div>`
-           : `<div class="muted">説明はありません</div>`}
-    ${img ? `<img class="img" loading="lazy" src="${escapeHtml(img)}">` : ``}
-    ${vid ? `<div class="videoWrap">
-               <button class="btn" data-video-btn="1">▶ 動画を見る</button>
-               <div data-video-area="1"></div>
-             </div>` : ``}
-  `;
-}
+  const desc = String(d.description || "").trim();
+  const img  = String(d.image_url || "").trim();
+  const vid  = String(d.video_url || "").trim();
+  const yEmbed = toYoutubeEmbed(vid);
 
   panelEl.innerHTML = `
     ${desc ? `<div class="desc">${escapeHtml(desc)}</div>` : `<div class="muted">説明はありません</div>`}
@@ -723,9 +710,6 @@ qs("#btnLoadLast").addEventListener("click", async () => {
   }, true);
 })();
 
-// ===== customer画面では ui.js のナビを無効化 =====
-window.IS_CUSTOMER_PAGE = true;
-
 (async function init(){
   if (!GAS_WEB_APP_URL || !GAS_WEB_APP_URL.includes("script.google.com")) {
     setMsg("err", "GAS_WEB_APP_URL が未設定です。");
@@ -748,5 +732,3 @@ window.IS_CUSTOMER_PAGE = true;
   const last = localStorage.getItem(LS_LAST_ORDER_ID) || "";
   qs("#btnLoadLast").style.display = last ? "" : "none";
 })();
-
-
