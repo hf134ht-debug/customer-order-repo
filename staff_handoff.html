@@ -4,7 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>SERVE STATION</title>
+
+  <!-- ✅ 読み込み順を固定（誤作動防止） -->
   <link rel="stylesheet" href="./ui_dark.css?v=2">
+  <link rel="stylesheet" href="./ui_theme.css?v=1">
+
   <style>
     :root{ --bg:#f7f7fb; --card:#fff; --line:#e8e8ef; --text:#111; --muted:#666; --danger:#c0392b; --ok:#1e824c; --shadow:0 10px 30px rgba(0,0,0,.06); }
     body{ margin:0; font-family:system-ui,-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif; background:var(--bg); color:var(--text); }
@@ -62,628 +66,74 @@
     .prodBtn{ display:flex; justify-content:space-between; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:14px; background:#fff; cursor:pointer; font-weight:900; }
     .prodBtn:disabled{ opacity:.5; cursor:not-allowed; }
     .stickyFoot{ position:sticky; bottom:0; background:#fff; padding:10px 0 0; border-top:1px solid var(--line); }
+
     /* ==== FIX: header controls should be horizontal ==== */
 
-/* 上部（タイトル + コントロール群）は横並び固定 */
-.wrap .topbar{
-  flex-wrap: nowrap;               /* ★横固定 */
-  align-items: flex-start;
-}
-
-/* 右側コントロールを右寄せ、1行に保つ */
-.ctrls{
-  flex: 1;
-  justify-content: flex-end;
-  flex-wrap: nowrap;               /* ★折り返さない */
-  overflow-x: auto;                /* 画面が狭い時は横スクロール */
-  white-space: nowrap;
-  gap: 10px;
-  padding-bottom: 4px;             /* スクロールバーの逃げ */
-}
-
-/* ★最重要：ui_dark.css の width:100% を潰す */
-.ctrls select,
-.ctrls button,
-.ctrls .pill{
-  width: auto !important;          /* ★これで縦積みが消える */
-  flex: 0 0 auto;
-}
-
-/* pillが縮まないように */
-#countPill{ min-width: 4.5em; text-align:center; }
-
-/* 狭い時はタイトル側も少しだけ詰める */
-@media (max-width: 680px){
-  .wrap .topbar{ flex-wrap: wrap; }          /* タイトルは折り返してOK */
-  .ctrls{ width:100%; justify-content:flex-start; }
-}
-
-/* ===== NIGHT MARKET (light & pop) ===== */
-:root{
-  --bg:#0b1020;            /* 深い夜色 */
-  --panel: rgba(255,255,255,.06);
-  --panel2: rgba(255,255,255,.04);
-  --line: rgba(255,255,255,.14);
-
-  --ink: rgba(255,255,255,.92);
-  --muted: rgba(255,255,255,.68);
-
-  --neon1:#a855f7;         /* purple */
-  --neon2:#22d3ee;         /* cyan */
-  --neon3:#22c55e;         /* green */
-  --danger:#fb7185;        /* pink-red */
-
-  --shadow: 0 14px 40px rgba(0,0,0,.35);
-  --shadow2: 0 8px 18px rgba(0,0,0,.28);
-}
-
-/* 背景：写真なし・軽い（グラデ3枚だけ） */
-body{
-  background:
-    radial-gradient(900px 600px at 8% -10%, rgba(168,85,247,.32), transparent 60%),
-    radial-gradient(900px 600px at 110% 15%, rgba(34,211,238,.26), transparent 55%),
-    radial-gradient(900px 700px at 30% 120%, rgba(34,197,94,.18), transparent 55%),
-    var(--bg);
-  color: var(--ink);
-}
-
-/* 既存の header blur を殺して軽くする（あなたの <style> にある header を上書き） */
-header{ backdrop-filter: none !important; }
-header.appHeader{
-  background: rgba(11,16,32,.72);
-  border-bottom: 1px solid var(--line);
-}
-
-/* layout */
-.wrap{ max-width: 980px; margin:0 auto; padding: 10px 12px 30px; }
-
-.headRow{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:14px;
-  padding: 10px 12px;
-}
-
-/* brand */
-.brandTitle{
-  font-weight: 1000;
-  letter-spacing: .9px;
-  font-size: 18px;
-  text-transform: uppercase;
-  background: linear-gradient(90deg, var(--neon1), var(--neon2));
-  -webkit-background-clip:text;
-  background-clip:text;
-  color: transparent;
-  text-shadow: 0 0 18px rgba(34,211,238,.12);
-}
-.brandSub{ font-size:12px; color: var(--muted); margin-top:2px; }
-
-/* nav */
-.topNav{ display:flex; gap:8px; align-items:center; }
-.navItem{
-  display:inline-flex;
-  padding: 8px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: rgba(255,255,255,.05);
-  font-weight: 900;
-  color: var(--ink);
-  transition: transform .06s ease, background .12s ease, border-color .12s ease;
-}
-.navItem:hover{ background: rgba(255,255,255,.08); }
-.navItem:active{ transform: scale(.98); }
-.navItem.active{
-  border-color: rgba(34,211,238,.55);
-  box-shadow: 0 0 0 3px rgba(34,211,238,.16);
-}
-
-/* shopBar */
-.shopBar{ display:flex; gap:10px; align-items:center; }
-.badge-open,.badge-close{
-  display:inline-flex; align-items:center; gap:8px;
-  padding: 7px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: rgba(255,255,255,.05);
-  font-weight: 1000;
-}
-.badge-open{ border-color: rgba(34,197,94,.35); }
-.badge-close{ border-color: rgba(251,113,133,.45); }
-.dot-open,.dot-close{ width:10px; height:10px; border-radius:50%; }
-.dot-open{ background: var(--neon3); box-shadow: 0 0 14px rgba(34,197,94,.35); }
-.dot-close{ background: var(--danger); box-shadow: 0 0 14px rgba(251,113,133,.35); }
-
-/* tools */
-.toolRow{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding: 6px 12px 10px;
-}
-.toolRight{
-  display:flex;
-  gap:10px;
-  align-items:center;
-  justify-content:flex-end;
-  flex-wrap:nowrap;
-  overflow-x:auto;
-  white-space:nowrap;
-  padding-bottom: 4px;
-}
-.toolRight select,
-.toolRight button,
-.toolLeft .pill{
-  width:auto !important;
-  flex: 0 0 auto;
-}
-
-/* form controls */
-select, input[type="search"]{
-  border: 1px solid var(--line);
-  background: rgba(255,255,255,.05);
-  color: var(--ink);
-}
-select:focus, input[type="search"]:focus{
-  outline:none;
-  box-shadow: 0 0 0 3px rgba(168,85,247,.18);
-  border-color: rgba(168,85,247,.55);
-}
-
-/* buttons */
-.btn{
-  border: 1px solid var(--line);
-  background: rgba(255,255,255,.06);
-  color: var(--ink);
-  font-weight: 1000;
-}
-.btnPrimary{
-  background: linear-gradient(90deg, var(--neon1), var(--neon2));
-  border-color: transparent;
-  color:#06101a;
-}
-.btn-close{
-  background: rgba(251,113,133,.12);
-  border-color: rgba(251,113,133,.45);
-}
-.btn-open{
-  background: rgba(34,197,94,.12);
-  border-color: rgba(34,197,94,.45);
-}
-
-/* cards */
-.card{
-  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  box-shadow: var(--shadow2);
-}
-.card:hover{ box-shadow: var(--shadow); }
-
-/* text */
-.muted{ color: var(--muted) !important; }
-.pill{
-  border: 1px solid var(--line);
-  background: rgba(255,255,255,.05);
-  color: var(--ink);
-  font-weight: 1000;
-}
-
-/* mobile */
-@media (max-width: 720px){
-  .headRow{ flex-wrap:wrap; }
-  .topNav{ width:100%; }
-}
-
-    /* ===== typography upgrade ===== */
-
-/* 全体のベースフォントを少し締める */
-body{
-  font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif !important;
-  letter-spacing: .2px;
-}
-
-/* ロゴ（SERVE STATION）を「ロゴ感」出す */
-.brandTitle{
-  font-size: 26px !important;      /* ★大きく */
-  font-weight: 1100 !important;
-  letter-spacing: 1.4px !important;
-  line-height: 1.0;
-  text-transform: uppercase;
-}
-
-/* カード見出し（No.xx）と金額を締める */
-.card .name{
-  font-weight: 1000 !important;
-  letter-spacing: .4px;
-}
-.card .price{
-  font-weight: 1100 !important;
-  letter-spacing: .4px;
-}
-
-/* 内訳を「黒丸リスト」から “モダンな行” へ */
-.card .list{
-  list-style: none !important;
-  padding-left: 0 !important;
-  margin: 10px 0 0 !important;
-}
-.card .list li{
-  display:flex;
-  align-items:baseline;
-  justify-content:space-between;
-  gap:10px;
-
-  padding: 10px 10px;
-  border: 1px solid rgba(255,255,255,.12);
-  background: rgba(255,255,255,.04);
-  border-radius: 14px;
-
-  font-weight: 900;                /* ★ここが「かっこよさ」 */
-  letter-spacing: .2px;
-}
-.card .list li::before{
-  content:"";
-  width:8px; height:8px;
-  border-radius:99px;
-  background: linear-gradient(90deg, var(--neon1), var(--neon2));
-  box-shadow: 0 0 12px rgba(34,211,238,.22);
-  margin-right:8px;
-  flex: 0 0 auto;
-}
-.card .list li{
-  position: relative;
-}
-.card .list li > *{ flex:0 0 auto; }
-
-/* 内訳の “商品名側” を強く、右側（数量/小計）を整列 */
-.card .list li .itemName,
-.card .list li b,
-.card .list li span{
-  font-weight: 900;
-}
-
-/* ===== item lines (bigger & stylish) ===== */
-.card .list{
-  list-style:none !important;
-  padding-left:0 !important;
-  margin: 12px 0 0 !important;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-
-.card .list .lineRow{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-
-  padding: 12px 12px;
-  border-radius: 16px;
-
-  border: 1px solid rgba(255,255,255,.14);
-  background: rgba(255,255,255,.05);
-  box-shadow: 0 8px 18px rgba(0,0,0,.18);
-}
-
-.card .list .lineName{
-  font-size: 18px;         /* ★商品名 大きく */
-  font-weight: 1000;
-  letter-spacing: .2px;
-}
-
-.card .list .lineMeta{
-  display:flex;
-  align-items:baseline;
-  gap:12px;
-  flex: 0 0 auto;
-}
-
-.card .list .lineQty{
-  font-size: 17px;         /* ★数量 大きく */
-  font-weight: 1000;
-  opacity: .90;
-}
-
-.card .list .lineSum{
-  font-size: 18px;         /* ★小計 大きく */
-  font-weight: 1100;
-  background: linear-gradient(90deg, var(--neon1), var(--neon2));
-  -webkit-background-clip:text;
-  background-clip:text;
-  color: transparent;
-}
-
-.card .list .lineEmpty{
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px dashed rgba(255,255,255,.18);
-  color: rgba(255,255,255,.70);
-}
-
-/* ===== make shop state readable on dark header ===== */
-#shopBar .badge-open,
-#shopBar .badge-close{
-  color: rgba(255,255,255,.92) !important;
-}
-
-#btnToggleShop{
-  color: #fff !important;
-}
-
-/* ボタン内の文字が薄い場合の保険 */
-#btnToggleShop.btn-close{ color:#fff !important; }
-#btnToggleShop.btn-open{  color:#fff !important; }
-
-    /* 内訳の金額：ネオン禁止 → 単色に */
-.card .list .lineSum{
-  background: none !important;
-  -webkit-background-clip: initial !important;
-  background-clip: initial !important;
-  color: rgba(255,255,255,.92) !important; /* ダーク背景なら白寄りが“黒扱い”で見やすい */
-  text-shadow: none !important;
-}
-
-    /* ===== POP & STYLISH: card borders heavier ===== */
-.card{
-  position: relative;
-  border-radius: 22px !important;
-
-  /* 外枠を太く */
-  border: 4px solid rgba(255,255,255,.26) !important;
-
-  /* 外側の縁の存在感（影は軽め） */
-  box-shadow: 0 14px 40px rgba(0,0,0,.28) !important;
-
-  /* 余白を少し増やして“枠が太いのに詰まらない” */
-  padding: 16px !important;
-
-  background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.05)) !important;
-}
-
-/* 内枠（2重目）を太く：擬似要素で作る */
-.card::before{
-  content:"";
-  position:absolute;
-  inset: 8px;                   /* 外枠との間隔＝“枠の太さ感” */
-  border-radius: 18px;
-  border: 3px solid rgba(34,211,238,.30); /* 内枠は少し色味を変えて夜市っぽく */
-  pointer-events:none;
-}
-
-/* カード内の区切り線も太めにしてポップに */
-.card .divider{
-  height: 2px !important;
-  background: rgba(255,255,255,.18) !important;
-}
-
-/* カード内訳行も枠太めに（ポップ感） */
-.card .list .lineRow{
-  border-width: 2px !important;
-  border-color: rgba(255,255,255,.18) !important;
-}
-
-    /* ===== Page background (light, not competing with header) ===== */
-body{
-  /* ヘッダはそのまま、下地だけ少し色を入れてカードを浮かせる */
-  background:
-    radial-gradient(900px 520px at 18% 10%, rgba(34,211,238,.12), transparent 60%),
-    radial-gradient(900px 520px at 86% 26%, rgba(168,85,247,.10), transparent 60%),
-    radial-gradient(820px 520px at 40% 105%, rgba(34,197,94,.08), transparent 60%),
-    #f5f7fb;
-}
-
-/* ===== Card: more "floating" + stylish ===== */
-.card{
-  background: linear-gradient(180deg, #ffffff, #fbfcff) !important;
-  border: 4px solid rgba(34,211,238,.28) !important;   /* 外枠：うるさくないシアン */
-  border-radius: 22px !important;
-  box-shadow:
-    0 18px 50px rgba(15, 23, 42, .14),
-    0 10px 22px rgba(15, 23, 42, .10) !important;
-  padding: 16px !important;
-}
-
-/* 内枠（2重目）も太く＆薄めに */
-.card::before{
-  content:"";
-  position:absolute;
-  inset: 8px;
-  border-radius: 18px;
-  border: 3px solid rgba(168,85,247,.18);  /* 内枠：薄いパープルで“夜市感” */
-  pointer-events:none;
-}
-
-/* ほんの少しだけ“持ち上がる” */
-.card:hover{
-  transform: translateY(-1px);
-  box-shadow:
-    0 22px 64px rgba(15, 23, 42, .18),
-    0 12px 26px rgba(15, 23, 42, .12) !important;
-}
-
-/* ===== 内訳行：金額が白くて見えない問題を修正 ===== */
-.card .list .lineSum{
-  background: none !important;
-  color: rgba(15, 23, 42, .82) !important; /* うるさくない“締まった黒寄り” */
-  text-shadow: none !important;
-}
-
-/* 内訳の行自体も少し濃くしてカード内で映えるように */
-.card .list .lineRow{
-  border: 2px solid rgba(15, 23, 42, .10) !important;
-  background: rgba(255,255,255,.86) !important;
-  box-shadow: 0 10px 18px rgba(15, 23, 42, .10) !important;
-}
-
-/* ===== スマホで商品名〜数量が収まらない問題を修正 ===== */
-.card .list .lineRow{
-  display:flex;
-  flex-wrap: wrap;            /* ★折り返し許可 */
-  align-items: center;
-  gap: 8px 12px;
-}
-
-.card .list .lineName{
-  flex: 1 1 240px;            /* ★名前は伸びてOK */
-  min-width: 0;               /* ★これが無いと折り返しが効きにくい */
-  white-space: normal;
-  overflow-wrap: anywhere;    /* ★長い商品名でも崩れない */
-}
-
-.card .list .lineMeta{
-  flex: 0 0 auto;
-  display:flex;
-  align-items: baseline;
-  gap: 10px;
-  margin-left: auto;          /* 右寄せ */
-}
-
-/* さらに狭い端末では、数量/金額を下段に落として整える */
-@media (max-width: 420px){
-  .card .list .lineName{
-    font-size: 16px !important;
-  }
-  .card .list .lineQty{
-    font-size: 15px !important;
-  }
-  .card .list .lineSum{
-    font-size: 16px !important;
-  }
-  .card .list .lineMeta{
-    width: 100%;
-    justify-content: flex-end; /* 下段右寄せ */
-  }
-}
-/* ===== 内訳：左に商品名 / 右に数量+小計（狭い時は右側だけ2段） ===== */
-.card .list{
-  list-style:none !important;
-  padding-left:0 !important;
-  margin: 12px 0 0 !important;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-
-.card .list .lineRow{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:12px;
-
-  padding: 12px 12px;
-  border-radius: 16px;
-  border: 1px solid rgba(15,23,42,.10) !important;
-  background: rgba(255,255,255,.92) !important;
-  box-shadow: 0 10px 18px rgba(15,23,42,.08) !important;
-}
-
-.card .list .lineName{
-  flex: 1 1 auto;
-  min-width: 0;
-  text-align:left;                 /* ★左詰め */
-  font-size: 18px;
-  font-weight: 1000;
-  line-height: 1.15;
-  overflow-wrap:anywhere;
-}
-
-.card .list .lineMeta{
-  flex: 0 0 auto;
-  display:flex;
-  align-items:baseline;
-  justify-content:flex-end;
-  text-align:right;                /* ★右詰め */
-  gap: 12px;
-  min-width: 140px;                /* 右側が安定して揃う */
-}
-
-.card .list .lineQty{
-  font-size: 15px;
-  font-weight: 900;
-  color: rgba(15,23,42,.72);
-}
-
-.card .list .lineSum{
-  font-size: 16px;
-  font-weight: 1100;
-  color: rgba(15,23,42,.86) !important;
-}
-
-/* さらに狭い端末：数量/小計だけ縦にして右寄せ（商品名は左のまま） */
-@media (max-width: 420px){
-  .card .list .lineMeta{
-    flex-direction:column;
-    align-items:flex-end;
-    gap: 4px;
-    min-width: 0;
-  }
-}
-/* ===== 内訳行：2枚目の配置に固定（左=商品名 / 右=×数量 + 小計） ===== */
-.card .list{
-  list-style:none !important;
-  padding-left:0 !important;
-  margin: 12px 0 0 !important;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-
-.card .list .lineRow{
-  display:flex !important;
-  align-items:center !important;
-  justify-content:space-between !important;
-  flex-wrap:nowrap !important;          /* ★同一行固定 */
-  gap:12px !important;
-
-  padding: 12px 12px !important;
-  border-radius: 16px !important;
-  border: 1px solid rgba(15,23,42,.10) !important;
-  background: rgba(255,255,255,.92) !important;
-  box-shadow: 0 10px 18px rgba(15,23,42,.08) !important;
-}
-
-.card .list .lineName{
-  flex: 1 1 auto !important;
-  min-width: 0 !important;
-  text-align:left !important;
-  font-size: 18px !important;
-  font-weight: 1000 !important;
-  line-height: 1.15;
-
-  /* ★右側を守るため：長い商品名は省略（2枚目の見た目に近い） */
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-}
-
-.card .list .lineMeta{
-  flex: 0 0 auto !important;
-  display:flex !important;
-  align-items:baseline !important;
-  justify-content:flex-end !important;
-  gap: 12px !important;
-
-  white-space: nowrap !important;       /* ★×数量と小計は折り返さない */
-  text-align:right !important;
-}
-
-.card .list .lineQty{
-  font-size: 16px !important;
-  font-weight: 900 !important;
-  color: rgba(15,23,42,.70) !important;
-}
-
-.card .list .lineSum{
-  font-size: 16px !important;
-  font-weight: 1100 !important;
-  color: rgba(15,23,42,.86) !important;
-}
-
+    /* 上部（タイトル + コントロール群）は横並び固定 */
+    .wrap .topbar{
+      flex-wrap: nowrap;               /* ★横固定 */
+      align-items: flex-start;
+    }
+
+    /* 右側コントロールを右寄せ、1行に保つ */
+    .ctrls{
+      flex: 1;
+      justify-content: flex-end;
+      flex-wrap: nowrap;               /* ★折り返さない */
+      overflow-x: auto;                /* 画面が狭い時は横スクロール */
+      white-space: nowrap;
+      gap: 10px;
+      padding-bottom: 4px;             /* スクロールバーの逃げ */
+    }
+
+    /* ★最重要：ui_dark.css の width:100% を潰す */
+    .ctrls select,
+    .ctrls button,
+    .ctrls .pill{
+      width: auto !important;          /* ★これで縦積みが消える */
+      flex: 0 0 auto;
+    }
+
+    /* pillが縮まないように */
+    #countPill{ min-width: 4.5em; text-align:center; }
+
+    /* 狭い時はタイトル側も少しだけ詰める */
+    @media (max-width: 680px){
+      .wrap .topbar{ flex-wrap: wrap; }          /* タイトルは折り返してOK */
+      .ctrls{ width:100%; justify-content:flex-start; }
+    }
+
+    /* ※あなたの元の大量テーマCSSはそのまま保持（ここでは削除しない） */
+
+    /* ===== 最終FIX（最小）：内訳を2枚目の配置に固定 ===== */
+    .card .list .lineRow{
+      display:flex !important;
+      align-items:center !important;
+      justify-content:space-between !important;
+      flex-wrap:nowrap !important;
+      gap:12px !important;
+    }
+
+    .card .list .lineName{
+      flex:1 1 auto !important;
+      min-width:0 !important;
+      text-align:left !important;   /* ★左詰め固定 */
+      white-space:nowrap !important;
+      overflow:hidden !important;
+      text-overflow:ellipsis !important;
+    }
+
+    .card .list .lineMeta{
+      flex:0 0 auto !important;
+      display:flex !important;
+      align-items:baseline !important;
+      justify-content:flex-end !important; /* ★右側固定 */
+      gap:12px !important;
+      white-space:nowrap !important;
+      text-align:right !important;
+    }
   </style>
-  
+
 </head>
 <body>
 <header class="appHeader">
@@ -807,11 +257,5 @@ body{
 
 <script src="./handoff.js"></script>
 <script src="./ui.js?v=1"></script>
-<link rel="stylesheet" href="./ui_theme.css?v=1">
 </body>
 </html>
-
-
-
-
-
