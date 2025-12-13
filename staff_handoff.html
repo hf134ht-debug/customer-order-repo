@@ -97,39 +97,44 @@
   .ctrls{ width:100%; justify-content:flex-start; }
 }
 
-    /* ===== POP x STYLISH THEME (staff) ===== */
+/* ===== NIGHT MARKET (light & pop) ===== */
 :root{
-  --bg: #f6f7fb;
-  --ink:#101828;
-  --muted:#667085;
-  --line: rgba(16,24,40,.10);
-  --card:#ffffff;
+  --bg:#0b1020;            /* 深い夜色 */
+  --panel: rgba(255,255,255,.06);
+  --panel2: rgba(255,255,255,.04);
+  --line: rgba(255,255,255,.14);
 
-  --accent:#6d28d9;     /* 紫 */
-  --accent2:#2563eb;    /* 青 */
-  --ok:#16a34a;
-  --danger:#ef4444;
+  --ink: rgba(255,255,255,.92);
+  --muted: rgba(255,255,255,.68);
 
-  --shadow: 0 14px 35px rgba(16,24,40,.10);
-  --shadow2: 0 8px 18px rgba(16,24,40,.08);
+  --neon1:#a855f7;         /* purple */
+  --neon2:#22d3ee;         /* cyan */
+  --neon3:#22c55e;         /* green */
+  --danger:#fb7185;        /* pink-red */
+
+  --shadow: 0 14px 40px rgba(0,0,0,.35);
+  --shadow2: 0 8px 18px rgba(0,0,0,.28);
 }
 
-/* 背景：抽象で軽い（写真なし） */
+/* 背景：写真なし・軽い（グラデ3枚だけ） */
 body{
   background:
-    radial-gradient(1000px 700px at 10% -10%, rgba(109,40,217,.16), transparent 60%),
-    radial-gradient(900px 600px at 110% 10%, rgba(37,99,235,.14), transparent 55%),
-    radial-gradient(900px 600px at 30% 120%, rgba(34,197,94,.10), transparent 55%),
+    radial-gradient(900px 600px at 8% -10%, rgba(168,85,247,.32), transparent 60%),
+    radial-gradient(900px 600px at 110% 15%, rgba(34,211,238,.26), transparent 55%),
+    radial-gradient(900px 700px at 30% 120%, rgba(34,197,94,.18), transparent 55%),
     var(--bg);
   color: var(--ink);
 }
 
-/* ヘッダ：ぼかしをやめて軽く＆シャープに */
+/* 既存の header blur を殺して軽くする（あなたの <style> にある header を上書き） */
+header{ backdrop-filter: none !important; }
 header.appHeader{
-  background: rgba(246,247,251,.95);
+  background: rgba(11,16,32,.72);
   border-bottom: 1px solid var(--line);
-  backdrop-filter: none; /* ★重さ対策 */
 }
+
+/* layout */
+.wrap{ max-width: 980px; margin:0 auto; padding: 10px 12px 30px; }
 
 .headRow{
   display:flex;
@@ -139,53 +144,56 @@ header.appHeader{
   padding: 10px 12px;
 }
 
+/* brand */
 .brandTitle{
   font-weight: 1000;
-  letter-spacing: .5px;
+  letter-spacing: .9px;
   font-size: 18px;
-  background: linear-gradient(90deg, var(--accent), var(--accent2));
-  -webkit-background-clip: text;
-  background-clip: text;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, var(--neon1), var(--neon2));
+  -webkit-background-clip:text;
+  background-clip:text;
   color: transparent;
+  text-shadow: 0 0 18px rgba(34,211,238,.12);
 }
 .brandSub{ font-size:12px; color: var(--muted); margin-top:2px; }
 
-.topNav{
-  display:flex; gap:8px; align-items:center;
-}
+/* nav */
+.topNav{ display:flex; gap:8px; align-items:center; }
 .navItem{
   display:inline-flex;
   padding: 8px 10px;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: rgba(255,255,255,.85);
+  background: rgba(255,255,255,.05);
   font-weight: 900;
   color: var(--ink);
   transition: transform .06s ease, background .12s ease, border-color .12s ease;
 }
-.navItem:hover{ background:#fff; border-color: rgba(16,24,40,.18); }
+.navItem:hover{ background: rgba(255,255,255,.08); }
 .navItem:active{ transform: scale(.98); }
 .navItem.active{
-  border-color: rgba(109,40,217,.35);
-  box-shadow: 0 0 0 3px rgba(109,40,217,.10);
+  border-color: rgba(34,211,238,.55);
+  box-shadow: 0 0 0 3px rgba(34,211,238,.16);
 }
 
+/* shopBar */
 .shopBar{ display:flex; gap:10px; align-items:center; }
 .badge-open,.badge-close{
   display:inline-flex; align-items:center; gap:8px;
   padding: 7px 10px;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: rgba(255,255,255,.85);
+  background: rgba(255,255,255,.05);
   font-weight: 1000;
 }
-.badge-open{ border-color: rgba(22,163,74,.25); background: rgba(22,163,74,.08); }
-.badge-close{ border-color: rgba(239,68,68,.25); background: rgba(239,68,68,.08); }
+.badge-open{ border-color: rgba(34,197,94,.35); }
+.badge-close{ border-color: rgba(251,113,133,.45); }
 .dot-open,.dot-close{ width:10px; height:10px; border-radius:50%; }
-.dot-open{ background: var(--ok); }
-.dot-close{ background: var(--danger); }
+.dot-open{ background: var(--neon3); box-shadow: 0 0 14px rgba(34,197,94,.35); }
+.dot-close{ background: var(--danger); box-shadow: 0 0 14px rgba(251,113,133,.35); }
 
-/* ツール列：横スクロールで“詰めて格好よく” */
+/* tools */
 .toolRow{
   display:flex;
   align-items:center;
@@ -210,28 +218,58 @@ header.appHeader{
   flex: 0 0 auto;
 }
 
-/* カード：ポップさ（影・輪郭・ほんの少し浮く） */
-.card{
-  border-radius: 18px;
-  border: 1px solid rgba(16,24,40,.10);
-  box-shadow: var(--shadow);
+/* form controls */
+select, input[type="search"]{
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.05);
+  color: var(--ink);
 }
-.card:hover{ box-shadow: 0 18px 45px rgba(16,24,40,.14); }
+select:focus, input[type="search"]:focus{
+  outline:none;
+  box-shadow: 0 0 0 3px rgba(168,85,247,.18);
+  border-color: rgba(168,85,247,.55);
+}
 
+/* buttons */
 .btn{
-  border: 1px solid rgba(16,24,40,.12);
-  background: rgba(255,255,255,.92);
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.06);
+  color: var(--ink);
   font-weight: 1000;
 }
 .btnPrimary{
-  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  background: linear-gradient(90deg, var(--neon1), var(--neon2));
   border-color: transparent;
-  color:#fff;
+  color:#06101a;
 }
-.btn-close{ background: rgba(239,68,68,.10); border-color: rgba(239,68,68,.28); }
-.btn-open{ background: rgba(22,163,74,.10); border-color: rgba(22,163,74,.28); }
+.btn-close{
+  background: rgba(251,113,133,.12);
+  border-color: rgba(251,113,133,.45);
+}
+.btn-open{
+  background: rgba(34,197,94,.12);
+  border-color: rgba(34,197,94,.45);
+}
 
-/* スマホ：ブランドとナビは折り返し */
+/* cards */
+.card{
+  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow2);
+}
+.card:hover{ box-shadow: var(--shadow); }
+
+/* text */
+.muted{ color: var(--muted) !important; }
+.pill{
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.05);
+  color: var(--ink);
+  font-weight: 1000;
+}
+
+/* mobile */
 @media (max-width: 720px){
   .headRow{ flex-wrap:wrap; }
   .topNav{ width:100%; }
@@ -366,6 +404,7 @@ header.appHeader{
 <script src="./ui.js?v=1"></script>
 </body>
 </html>
+
 
 
 
