@@ -213,7 +213,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         mode:"setSettings",
         settings:{
           AUTO_HANDOFF_MIN:autoMin,
-          STAFF_LIST_LIMIT:staffLimit
         }
       });
       if(!r.ok) throw new Error(r.error || "setSettings failed");
@@ -230,6 +229,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("btnResetSoldOut").addEventListener("click", resetSoldOutAll);
   load();
 });
+
 
 
 
