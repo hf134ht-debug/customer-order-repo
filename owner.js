@@ -176,10 +176,60 @@ async function resetSoldOutAll(){
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  function renderOwnerShopState_(open){
+  const el = document.getElementById("ownerShopState");
+  if(!el) return;
+  el.textContent = open ? "営業中" : "受付停止";
+  el.style.color = open ? "#0a7" : "#c00";
+}
+
+async function loadOpsSettings_(){
+  const s = await apiGet({ mode:"getSettings" });
+  if(!s.ok) throw new Error(s.error || "getSettings failed");
+  renderOwnerShopState_(!!s.settings.SHOP_OPEN);
+
+  const autoMin = document.getElementById("autoMin");
+  const staffLimit = document.getElementById("staffLimit");
+  if(autoMin) autoMin.value = String(s.settings.AUTO_HANDOFF_MIN || 60);
+  if(staffLimit) staffLimit.value = String(s.settings.STAFF_LIST_LIMIT || 6);
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  try{
+    await loadOpsSettings_();
+
+    const t = document.getElementById("ownerToggleShop");
+    if(t) t.addEventListener("click", async ()=>{
+      const r = await apiPost({ mode:"toggleShopOpen" });
+      if(r.ok) renderOwnerShopState_(!!r.SHOP_OPEN);
+    });
+
+    const save = document.getElementById("saveOps");
+    if(save) save.addEventListener("click", async ()=>{
+      const autoMin = Number(document.getElementById("autoMin")?.value || 60);
+      const staffLimit = Number(document.getElementById("staffLimit")?.value || 6);
+
+      const r = await apiPost({
+        mode:"setSettings",
+        settings:{
+          AUTO_HANDOFF_MIN:autoMin,
+          STAFF_LIST_LIMIT:staffLimit
+        }
+      });
+      if(!r.ok) throw new Error(r.error || "setSettings failed");
+      msg("設定を保存しました", false);
+    });
+
+  }catch(e){
+    msg("設定取得エラー: " + e.message, true);
+  }
+});
+
   $("btnReload").addEventListener("click", load);
   $("btnAdd").addEventListener("click", addOrUpdate);
   $("btnResetSoldOut").addEventListener("click", resetSoldOutAll);
   load();
 });
+
 
 
