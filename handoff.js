@@ -7,7 +7,7 @@
    - 完了/キャンセル
    - 手動並び替え：rankモード時に上下ボタン（GASへ保存）
    - 開店/閉店トグル
-   ※機能は削らず、重複と競合だけ排除
+   ※機能は削らず、重複と競合だけ排除（CSS統合前提）
 ========================================================= */
 
 const qs = (s, el = document) => el.querySelector(s);
@@ -76,8 +76,11 @@ let ordersOther = [];
 let editingOrder = null;
 let draftItems = [];
 
-/* ★ここが致命傷だった：refreshLock を init より前に宣言 */
+/* ★重要：initより前に宣言 */
 let refreshLock = false;
+
+/* 初回ロード判定（毎回“読み込み中”を出してラグっぽくしない） */
+let didFirstPaint = false;
 
 /* ===== controls ===== */
 const elView = qs("#viewMode");
@@ -113,7 +116,7 @@ function showLoadingUI() {
   const list = qs("#orderList");
   if (list) list.innerHTML = `<div class="msg">読み込み中…</div>`;
   const pill = qs("#countPill");
-  if (pill) pill.textContent = `0件`;   // 先に出す（“後から出る”を防ぐ）
+  if (pill) pill.textContent = `0件`;
 }
 
 /* ===== auto refresh ===== */
@@ -162,6 +165,7 @@ function rebuildFilterOptions(options) {
 function renderAll() {
   const list = qs("#orderList");
   if (!list) return;
+
   list.innerHTML = "";
 
   const compact = isCompact();
@@ -195,25 +199,13 @@ function renderAll() {
     row.dataset.orderId = o.order_id;
     row.innerHTML = `
       <div>
-        <div style="font-weight:900;">No.${Number(o.display_no || 0)}</div>
+        <div style="font-weight:1100;">No.${Number(o.display_no || 0)}</div>
         <div class="muted">経過 ${Number(o.elapsed_min || 0)} 分</div>
       </div>
       <div class="muted">${yen(o.total)}</div>
     `;
     row.addEventListener("click", () => openEditor(o));
     others.appendChild(row);
-  });
-
-  // ★iPhoneで商品名だけ消える対策（CSSだけで勝てない競合があるため）
-  //   -webkit-text-fill-color / visibility / opacity / min-width を“最小限”強制
-  document.querySelectorAll(".lineName").forEach((n) => {
-    n.style.color = "#111";
-    n.style.background = "none";
-    n.style.opacity = "1";
-    n.style.visibility = "visible";
-    n.style.display = "block";
-    n.style.minWidth = "0";
-    n.style.webkitTextFillColor = "#111";
   });
 }
 
@@ -226,7 +218,7 @@ function renderCard(o, compact, isRankMode, index) {
   const lines = buildLinesHtml(items);
 
   const lockNote = (String(o.lock_state || "") === "staff_edit")
-    ? `<div class="muted"><span class="dangerText">編集中</span>（別端末の可能性）</div>`
+    ? `<div class="muted"><span style="color:var(--danger); font-weight:1100;">編集中</span>（別端末の可能性）</div>`
     : "";
 
   const rankBtns = isRankMode ? `
@@ -291,7 +283,9 @@ async function refresh({ silent = false } = {}) {
 
   try {
     if (!silent) setMsg("", "");
-    showLoadingUI();
+
+    // ✅ 初回 or 手動更新だけ「読み込み中…」を出す（毎回出すとラグ/チラつきになる）
+    if (!didFirstPaint || !silent) showLoadingUI();
 
     const json = await apiGet({
       mode: "getPendingOrders",
@@ -303,11 +297,8 @@ async function refresh({ silent = false } = {}) {
 
     if (!json.ok) throw new Error(json.error || "取得失敗");
 
-    if (json.changed === false) {
-      // 差分なし：表示維持
-      renderAll();
-      return;
-    }
+    // ✅ 差分なしならDOMを触らない（体感速度が上がる）
+    if (json.changed === false && didFirstPaint) return;
 
     ordersMain = Array.isArray(json.orders_main) ? json.orders_main
       : (Array.isArray(json.orders) ? json.orders : []);
@@ -317,6 +308,7 @@ async function refresh({ silent = false } = {}) {
     if (Array.isArray(json.filter_options)) rebuildFilterOptions(json.filter_options);
 
     renderAll();
+    didFirstPaint = true;
     setMsg("", "");
   } catch (err) {
     const list = qs("#orderList");
@@ -386,7 +378,7 @@ function renderModal() {
       row.className = "itemRow";
       row.innerHTML = `
         <div>
-          <div style="font-weight:900;">${escapeHtml(it.product_name_at_sale)}</div>
+          <div style="font-weight:1100;">${escapeHtml(it.product_name_at_sale)}</div>
           <div class="muted">${yen(it.unit_price)} / 小計 ${yen(it.unit_price * it.qty)}</div>
         </div>
         <div class="qtyBox">
@@ -424,7 +416,6 @@ function renderModal() {
     });
   }
 
-  // products search
   const key = String(qs("#mSearch").value || "").trim().toLowerCase();
   const out = qs("#mProds");
   out.innerHTML = "";
@@ -447,7 +438,7 @@ function renderModal() {
       b.className = "prodBtn";
       b.disabled = sold;
       b.innerHTML = `
-        <div>${escapeHtml(p.name)} ${sold ? '<span class="dangerText">（売切）</span>' : ""}</div>
+        <div>${escapeHtml(p.name)} ${sold ? '<span style="color:var(--danger); font-weight:1100;">（売切）</span>' : ""}</div>
         <div class="muted">${yen(p.price)}</div>
       `;
       b.addEventListener("click", () => addProductToDraft(p));
@@ -606,7 +597,6 @@ async function initShopToggle_() {
 
   btn.addEventListener("click", async () => {
     try {
-      // GAS側が form を期待してる場合があるので text/plain で統一しつつ mode だけ投げる
       const r = await apiPost({ mode: "toggleShopOpen" });
       if (r.ok) renderShopState_(!!r.SHOP_OPEN);
     } catch {}
@@ -653,8 +643,11 @@ function bindEventsOnce() {
     setMsg("err", "GAS_WEB_APP_URL が未設定です。");
     return;
   }
-  showLoadingUI();        // ★即表示（体感改善）
-  bindEventsOnce();       // ★イベント1回
-  initShopToggle_();      // ★開店/閉店
+
+  // ✅ “読み込み中”は即出す（初回体感）
+  showLoadingUI();
+
+  bindEventsOnce();
+  initShopToggle_();
   refresh({ silent: false });
 })();
