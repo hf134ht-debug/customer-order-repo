@@ -13,7 +13,7 @@ let submitToken = null; // ★二重送信対策：送信中は同じtokenを使
 // ★強化：通信失敗→再送でも同じ注文になるように、sessionStorage に一時保存
 const SUBMIT_TOKEN_KEY = "pos_submit_token";
 const SUBMIT_TOKEN_TS_KEY = "pos_submit_token_ts";
-const SUBMIT_TOKEN_TTL_MS = 2 * 60 * 1000; // 2分だけ有効（必要なら延ばせます）
+const SUBMIT_TOKEN_TTL_MS = 2 * 60 * 1000; // 2分だけ有効
 
 function loadSubmitToken() {
   try {
@@ -44,7 +44,7 @@ function clearSubmitToken() {
 }
 
 let editOrderId = null;
-let editOriginalItems = null; // ←キャンセルで戻す用（itemsスナップショット）
+let editOriginalItems = null;
 
 const yen = (n) => "¥" + (Number(n||0)).toLocaleString("ja-JP");
 const uuid = () => {
@@ -218,8 +218,8 @@ function renderProductList() {
         </button>
       </div>
 
-      <!-- ★重要：押す前は“何も表示しない”＝ルール厳守 -->
-      <div class="detailPanel"></div>
+      <!-- ★押す前は空（最初から“読み込み中…”を出さない） -->
+      <div class="detailPanel" style="display:none;"></div>
     `;
 
     const minus = el.querySelector(".btnMinus");
@@ -246,16 +246,21 @@ function renderProductList() {
 
     const btn = el.querySelector(".detailToggleBtn");
     const panel = el.querySelector(".detailPanel");
+
     btn.addEventListener("click", async () => {
       const isOpen = panel.classList.contains("open");
       if (isOpen) {
         panel.classList.remove("open");
+        panel.style.display = "none";     // ★CSS競合しても必ず閉じる
         btn.querySelector(".chev").textContent = "▼";
-        // 閉じたら中身を残す（再オープンが速い）※好みで空にしてもOK
         return;
       }
+
+      // ★CSS側に .detailPanel.open が無くても必ず表示されるようにJSで強制
       panel.classList.add("open");
+      panel.style.display = "block";
       btn.querySelector(".chev").textContent = "▲";
+
       await ensureProductDetailLoaded(p.product_id, panel);
     });
 
@@ -263,38 +268,29 @@ function renderProductList() {
   });
 }
 
-/**
- * ★GASは触らずに直すポイント：
- *  - 「json.product が無い」時に {description:""} をキャッシュしてしまうと永久に“説明なし”固定になる
- *  - なので “空ダミーをキャッシュしない”
- */
 async function ensureProductDetailLoaded(productId, panelEl) {
-  // キャッシュが「有効そう」なら表示
+  // キャッシュが有効なら表示
   const cached = detailCache[productId];
   if (cached && (String(cached.description || "").trim() || String(cached.image_url || "").trim() || String(cached.video_url || "").trim())) {
     renderDetailPanel(panelEl, cached);
     return;
   }
 
-  // 開いた時にだけ表示
   panelEl.innerHTML = `<div class="muted">読み込み中…</div>`;
 
   try {
     const json = await apiGet({ mode:"getProductDetail", product_id: productId });
     if (!json.ok) throw new Error(json.error || "詳細取得に失敗しました。");
 
-    // 以前どおり json.product を使う（GAS側は変えない）
     const p = json.product;
 
-    // ★ここが核心：空ならキャッシュしない（固定化しない）
+    // ★空ダミーをキャッシュしない（“説明はありません”固定化の原因を潰す）
     if (!p) {
-      panelEl.innerHTML = `<div class="msg err">詳細データが見つかりませんでした（productが空）。</div>`;
+      panelEl.innerHTML = `<div class="msg err">詳細が取得できませんでした（productが空）。</div>`;
       return;
     }
 
-    // もし description が空でも、画像/動画があるかもしれないので保存はOK
     detailCache[productId] = p;
-
     renderDetailPanel(panelEl, p);
   } catch (err) {
     panelEl.innerHTML = `<div class="msg err">詳細を読み込めませんでした。<br>詳細: ${escapeHtml(String(err.message||err))}</div>`;
@@ -389,7 +385,6 @@ async function doCreateOrder(items) {
   loading.checkout = true;
   qs("#btnCheckout").disabled = true;
 
-  // ★送信トークン：同一セッション内の再送も同じtokenを使う
   submitToken = submitToken || loadSubmitToken() || uuid();
   saveSubmitToken(submitToken);
 
@@ -399,7 +394,7 @@ async function doCreateOrder(items) {
     const json = await apiPost({
       mode: "createOrder",
       source: "customer",
-      client_token: submitToken, // ★ここが重要
+      client_token: submitToken,
       items: items.map(x => ({ product_id: x.product_id, qty: x.qty })),
     });
     if (!json.ok) throw new Error(json.error || "注文の送信に失敗しました。");
@@ -407,14 +402,12 @@ async function doCreateOrder(items) {
     const order = json.order;
     localStorage.setItem(LS_LAST_ORDER_ID, order.order_id);
 
-    // ★URLにも注文IDを反映
     try {
       const u = new URL(location.href);
       u.searchParams.set("order_id", order.order_id);
       history.replaceState(null, "", u.toString());
     } catch {}
 
-    // ★ここで token を確実に破棄（成功したら次は新token）
     clearSubmitToken();
 
     qtyMap = Object.fromEntries(products.map(p => [p.product_id, 0]));
@@ -446,7 +439,6 @@ async function doCreateOrder(items) {
 
   } catch (err) {
     closeModal();
-    // ★失敗時は token を捨てない → 再送しても同じ注文として扱える
     setMsg("err", `注文を送信できませんでした。\n詳細: ${String(err.message || err)}\n\n※通信が不安定な場合は、もう一度「注文確定」を押してください（同じ注文として再送されます）。`);
   } finally {
     loading.checkout = false;
@@ -693,6 +685,30 @@ qs("#btnLoadLast").addEventListener("click", async () => {
   setView("my");
   await loadMyOrder(id);
 });
+
+/**
+ * ★ヘッダーの「注文履歴」などが変な挙動になる対策
+ * 共通の ui.js が “履歴画面へ遷移” みたいな挙動を持っていても、
+ * customer画面では②(注文確認)に寄せて事故らせない。
+ */
+(function guardHeaderNav(){
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest("a,button,div");
+    if (!a) return;
+    const header = a.closest("header");
+    if (!header) return;
+
+    const t = (a.textContent || "").trim();
+    if (!t) return;
+
+    // 「注文履歴」「履歴」などを customer では②に寄せる
+    if (t.includes("注文履歴") || (t === "履歴") || t.includes("history")) {
+      e.preventDefault();
+      e.stopPropagation();
+      setView("my");
+    }
+  }, true);
+})();
 
 (async function init(){
   if (!GAS_WEB_APP_URL || !GAS_WEB_APP_URL.includes("script.google.com")) {
