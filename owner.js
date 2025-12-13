@@ -140,6 +140,9 @@ async function addOrUpdate(){
     name: String($("add_name").value || "").trim(),
     price: Number($("add_price").value || 0),
     sort_order: Number($("add_sort").value || 0),
+    description: String($("add_desc").value || ""),
+    image_url: String($("add_img").value || ""),
+    video_url: String($("add_vid").value || ""),
   };
 
   try{
@@ -178,4 +181,5 @@ document.addEventListener("DOMContentLoaded", () => {
   $("btnResetSoldOut").addEventListener("click", resetSoldOutAll);
   load();
 });
+
 
