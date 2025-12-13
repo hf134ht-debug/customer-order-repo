@@ -61,6 +61,42 @@
     .prodBtn{ display:flex; justify-content:space-between; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:14px; background:#fff; cursor:pointer; font-weight:900; }
     .prodBtn:disabled{ opacity:.5; cursor:not-allowed; }
     .stickyFoot{ position:sticky; bottom:0; background:#fff; padding:10px 0 0; border-top:1px solid var(--line); }
+    /* ==== FIX: header controls should be horizontal ==== */
+
+/* 上部（タイトル + コントロール群）は横並び固定 */
+.wrap .topbar{
+  flex-wrap: nowrap;               /* ★横固定 */
+  align-items: flex-start;
+}
+
+/* 右側コントロールを右寄せ、1行に保つ */
+.ctrls{
+  flex: 1;
+  justify-content: flex-end;
+  flex-wrap: nowrap;               /* ★折り返さない */
+  overflow-x: auto;                /* 画面が狭い時は横スクロール */
+  white-space: nowrap;
+  gap: 10px;
+  padding-bottom: 4px;             /* スクロールバーの逃げ */
+}
+
+/* ★最重要：ui_dark.css の width:100% を潰す */
+.ctrls select,
+.ctrls button,
+.ctrls .pill{
+  width: auto !important;          /* ★これで縦積みが消える */
+  flex: 0 0 auto;
+}
+
+/* pillが縮まないように */
+#countPill{ min-width: 4.5em; text-align:center; }
+
+/* 狭い時はタイトル側も少しだけ詰める */
+@media (max-width: 680px){
+  .wrap .topbar{ flex-wrap: wrap; }          /* タイトルは折り返してOK */
+  .ctrls{ width:100%; justify-content:flex-start; }
+}
+
   </style>
 
   <link rel="stylesheet" href="./ui_dark.css?v=2">
@@ -184,4 +220,5 @@
 <script src="./ui.js?v=1"></script>
 </body>
 </html>
+
 
