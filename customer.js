@@ -273,12 +273,13 @@ async function loadProducts() {
 
 function renderProductList() {
   const list = qs("#productList");
+  if (!list) return;
   list.innerHTML = "";
 
-  // ★検索/売切非表示を反映
+  // フィルタ
   const view = filterProducts_(products);
 
-  // ★密度反映（CSS未対応でも効く）
+  // 密度反映（標準=1列 / コンパクト=2列）
   applyDensity_();
 
   if (!view.length) {
@@ -288,13 +289,13 @@ function renderProductList() {
 
   view.forEach(p => {
     const sold = !!p.is_sold_out;
+
     const el = document.createElement("div");
     el.className = "itemCard" + (sold ? " soldout" : "");
     el.dataset.pid = p.product_id;
 
     const currentQty = Number(qtyMap[p.product_id] || 0);
 
-    // ★売切の見た目をハッキリ（操作できないのも明確に）
     const soldBadge = sold
       ? `<span class="pill on" style="margin-left:8px;">売切</span>`
       : `<span class="pill off" style="margin-left:8px;color:#111;">販売中</span>`;
@@ -322,15 +323,15 @@ function renderProductList() {
       <div class="detailPanel" style="display:none;"></div>
     `;
 
-    // ★売切なら “完全に触れない” 感を強める（input/buttonはdisabled済みだが念のため）
-    if (sold) {
-      el.style.opacity = "0.6";
-    }
+    if (sold) el.style.opacity = "0.6";
 
     const minus = el.querySelector(".btnMinus");
     const plus  = el.querySelector(".btnPlus");
     const input = el.querySelector(".qtyInput");
+    const btn   = el.querySelector(".detailToggleBtn");
+    const panel = el.querySelector(".detailPanel");
 
+    // 数量操作（売切は無効）
     if (!sold) {
       minus.addEventListener("click", () => {
         const v = Math.max(0, Number(input.value||0) - 1);
@@ -351,48 +352,50 @@ function renderProductList() {
       });
     }
 
-    const btn = el.querySelector(".detailToggleBtn");
-    const panel = el.querySelector(".detailPanel");
-
-    if (Number(uiState.density || 1) === 2) {
-  // 他の開いてる詳細を閉じる
-  qs("#productList").querySelectorAll(".detailPanel.open").forEach(pn => {
-    pn.classList.remove("open");
-    pn.style.display = "none";
-  });
-  qs("#productList").querySelectorAll(".itemCard.detailOpen").forEach(card => {
-    card.classList.remove("detailOpen");
-  });
-  qs("#productList").querySelectorAll(".detailToggleBtn .chev").forEach(ch => {
-    ch.textContent = "▼";
-  });
-}
-
+    // 詳細（コンパクト時は “開いたカードだけ全幅” + “他は閉じる”）
     if (!sold) {
       btn.addEventListener("click", async () => {
         const isOpen = panel.classList.contains("open");
+        const isCompact = Number(uiState.density || 3) === 6;
+
+        // いったん閉じる
         if (isOpen) {
           panel.classList.remove("open");
           panel.style.display = "none";
           btn.querySelector(".chev").textContent = "▼";
-
-          el.classList.remove("detailOpen"); // ★追加：全幅解除
+          el.classList.remove("detailOpen");
           return;
         }
 
+        // コンパクトなら他を閉じる（クリックの中でやる！）
+        if (isCompact) {
+          list.querySelectorAll(".detailPanel.open").forEach(pn => {
+            pn.classList.remove("open");
+            pn.style.display = "none";
+          });
+          list.querySelectorAll(".itemCard.detailOpen").forEach(card => {
+            card.classList.remove("detailOpen");
+          });
+          list.querySelectorAll(".detailToggleBtn .chev").forEach(ch => {
+            ch.textContent = "▼";
+          });
+        }
+
+        // 開く
         panel.classList.add("open");
         panel.style.display = "block";
         btn.querySelector(".chev").textContent = "▲";
 
-        const dense = Number(uiState.density || 1) === 2;
-        if (dense) el.classList.add("detailOpen"); // ★追加：2列ぶんにする
+        if (isCompact) el.classList.add("detailOpen");
 
         await ensureProductDetailLoaded(p.product_id, panel);
-
-
-        list.appendChild(el);
       });
     }
+
+    // ★ここが重要：forEachの最後で必ず append する
+    list.appendChild(el);
+  });
+}
 
 async function ensureProductDetailLoaded(productId, panelEl) {
   // キャッシュが有効なら表示
@@ -858,5 +861,6 @@ qs("#btnLoadLast").addEventListener("click", async () => {
   const last = localStorage.getItem(LS_LAST_ORDER_ID) || "";
   qs("#btnLoadLast").style.display = last ? "" : "none";
 })();
+
 
 
