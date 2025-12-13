@@ -328,53 +328,44 @@ async function loadProducts() {
 }
 
 function renderProductList() {
-  const list = qs("#productList");
-  if (!list) return;
+  const listEl = qs("#productList");
+  listEl.innerHTML = "";
 
   applyDensity_();
-  list.innerHTML = "";
-
   const view = filterProducts_(products);
 
   if (!view.length) {
-    list.innerHTML = `<div class="msg">該当する商品がありません</div>`;
+    listEl.innerHTML = `<div class="msg">該当する商品がありません</div>`;
     return;
   }
 
-  // 高速化：まとめてDOM投入
-  const frag = document.createDocumentFragment();
-
   view.forEach(p => {
     const sold = !!p.is_sold_out;
-
-    const el = document.createElement("div");
-    el.className = "itemCard" + (sold ? " soldout" : "");
-    el.dataset.pid = p.product_id;
+    const card = document.createElement("div");
+    card.className = "itemCard" + (sold ? " soldout" : "");
+    card.dataset.pid = p.product_id;
 
     const currentQty = Number(qtyMap[p.product_id] || 0);
 
-    // ✅ 売切だけ表示（販売中は出さない）
-    const soldBadge = sold ? `<span class="pill on" style="margin-left:8px;">売切</span>` : ``;
+    // 販売中は表示しない（売切のときだけバッジ）
+    const soldBadge = sold ? `<span class="soldBadge">売切</span>` : "";
 
-    el.innerHTML = `
+    card.innerHTML = `
       <div class="row">
-        <div style="min-width:0;">
-          <div class="name" style="display:flex; align-items:center; gap:6px; min-width:0;">
-            <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(p.name)}</span>
-            ${soldBadge}
-          </div>
+        <div>
+          <div class="name">${escapeHtml(p.name)} ${soldBadge}</div>
           <div class="muted">${escapeHtml(p.product_id)}</div>
         </div>
         <div class="price">${yen(p.price)}</div>
       </div>
 
-      <div class="row" style="margin-top:10px; gap:10px; align-items:center;">
-        <div class="qty" style="min-width:0;">
-          <button class="btn btnGhost btnMinus" data-act="minus" ${sold ? "disabled":""}>−</button>
+      <div class="row" style="margin-top:10px;">
+        <div class="qty">
+          <button class="btn btnGhost btnMinus" ${sold ? "disabled":""}>−</button>
           <input class="qtyInput" type="number" min="0" value="${currentQty}" ${sold ? "disabled":""}/>
-          <button class="btn btnGhost btnPlus" data-act="plus" ${sold ? "disabled":""}>＋</button>
+          <button class="btn btnGhost btnPlus" ${sold ? "disabled":""}>＋</button>
         </div>
-        <button class="btn detailToggleBtn" data-act="detail" ${sold ? "disabled":""}>
+        <button class="btn detailToggleBtn" ${sold ? "disabled":""}>
           詳細 <span class="chev">▼</span>
         </button>
       </div>
@@ -382,13 +373,66 @@ function renderProductList() {
       <div class="detailPanel" style="display:none;"></div>
     `;
 
-    if (sold) el.style.opacity = "0.55";
+    const minus = card.querySelector(".btnMinus");
+    const plus  = card.querySelector(".btnPlus");
+    const input = card.querySelector(".qtyInput");
+    const btn   = card.querySelector(".detailToggleBtn");
+    const panel = card.querySelector(".detailPanel");
 
-    frag.appendChild(el);
+    if (!sold) {
+      minus.addEventListener("click", () => {
+        const v = Math.max(0, Number(input.value||0) - 1);
+        input.value = v;
+        qtyMap[p.product_id] = v;
+        updateTotals();
+      });
+      plus.addEventListener("click", () => {
+        const v = Math.max(0, Number(input.value||0) + 1);
+        input.value = v;
+        qtyMap[p.product_id] = v;
+        updateTotals();
+      });
+      input.addEventListener("input", () => {
+        const v = Math.max(0, Number(input.value||0));
+        qtyMap[p.product_id] = v;
+        updateTotals();
+      });
+
+      btn.addEventListener("click", async () => {
+        const open = panel.classList.contains("open");
+
+        // コンパクト時は「開ける前に他を閉じる」→ズレ事故防止
+        if (!open && isDense_()) {
+          listEl.querySelectorAll(".detailPanel.open").forEach(pn => {
+            pn.classList.remove("open");
+            pn.style.display = "none";
+          });
+          listEl.querySelectorAll(".itemCard.detailOpen").forEach(c => c.classList.remove("detailOpen"));
+          listEl.querySelectorAll(".detailToggleBtn .chev").forEach(ch => ch.textContent = "▼");
+        }
+
+        if (open) {
+          panel.classList.remove("open");
+          panel.style.display = "none";
+          btn.querySelector(".chev").textContent = "▼";
+          card.classList.remove("detailOpen");
+          return;
+        }
+
+        panel.classList.add("open");
+        panel.style.display = "block";
+        btn.querySelector(".chev").textContent = "▲";
+
+        if (isDense_()) card.classList.add("detailOpen"); // 2列ぶん→全幅に
+
+        await ensureProductDetailLoaded(p.product_id, panel);
+      });
+    }
+
+    listEl.appendChild(card); // ← 絶対ここ（クリックの中に入れない）
   });
-
-  list.appendChild(frag);
 }
+
 
 // ---------- Detail ----------
 async function ensureProductDetailLoaded(productId, panelEl) {
@@ -852,6 +896,7 @@ qs("#btnLoadLast").addEventListener("click", async () => {
   const last = localStorage.getItem(LS_LAST_ORDER_ID) || "";
   qs("#btnLoadLast").style.display = last ? "" : "none";
 })();
+
 
 
 
