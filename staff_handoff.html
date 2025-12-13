@@ -419,8 +419,24 @@ header.appHeader{
   filter: none !important;
 }
 </style>
+<style>
+/* ===== FINAL FIX: mobileで商品名が消える問題を完全に止める ===== */
+#lineFix, #lineFix * { all: unset; } /* 何もしてない保険（無視されるだけ） */
+
+#orderList .lineRow .lineName,
+#othersList .lineRow .lineName,
+.card .list .lineRow .lineName{
+  color:#111 !important;
+  background:none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  -webkit-text-fill-color:#111 !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  display:block !important;
+  min-width: 0 !important;
+}
+</style>
 
 </body>
 </html>
-
-
