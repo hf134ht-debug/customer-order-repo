@@ -233,8 +233,12 @@ function renderCard(o, compact, isRankMode, index) {
   el.className = "card" + (compact ? " compact" : "");
   el.dataset.orderId = o.order_id;
 
-  const items = Array.isArray(o.items) ? o.items : [];
-  const lines = buildLinesHtml(items);
+  const items =
+  Array.isArray(o.items) ? o.items :
+  Array.isArray(o.order_items) ? o.order_items :
+  Array.isArray(o.lines) ? o.lines :
+  [];
+const lines = buildLinesHtml(items);
 
   const lockNote = (String(o.lock_state || "") === "staff_edit")
     ? `<div class="muted"><span style="color:var(--danger); font-weight:1100;">編集中</span>（別端末の可能性）</div>`
@@ -612,20 +616,20 @@ async function initShopToggle_() {
   } catch {}
 
   const btn = qs("#btnToggleShop");
-  if (!btn) return;
+if (!btn) return;
 
-  btn.addEventListener("click", async () => {
+btn.addEventListener("click", async () => {
+  const isOpenNow = qs("#shopState")?.classList.contains("badge-open");
+  const nextLabel = isOpenNow ? "閉店（受付停止）" : "開店（受付再開）";
+
+  if (!confirm(`${nextLabel}に切り替えます。\nよろしいですか？`)) return;
+
   try {
-    // 現在の表示から「次にどうなるか」を判定
-    const isOpenNow = qs("#shopState")?.classList.contains("badge-open");
-    const nextLabel = isOpenNow ? "閉店（受付停止）" : "開店（受付再開）";
-    const msg = `${nextLabel}に切り替えます。\nよろしいですか？`;
-
-    if (!confirm(msg)) return; // ✅確認
-
     const r = await apiPost({ mode: "toggleShopOpen" });
     if (r.ok) renderShopState_(!!r.SHOP_OPEN);
-  } catch {}
+  } catch (e) {
+    setMsg("err", `切り替えに失敗しました。\n詳細: ${String(e?.message || e)}`);
+  }
 });
 
 /* ===== events ===== */
@@ -669,12 +673,19 @@ function bindEventsOnce() {
     return;
   }
 
-  // ✅ “読み込み中”は即出す（初回体感）
-  showLoadingUI();
-
-  bindEventsOnce();
-  initShopToggle_();
+   function boot() {
+  if (!GAS_WEB_APP_URL || !GAS_WEB_APP_URL.includes("script.google.com")) {
+    setMsg("err", "GAS_WEB_APP_URL が未設定です。");
+    return;
+  }
+  showLoadingUI();        // ★即表示
+  bindEventsOnce();       // ★イベント登録
+  initShopToggle_();      // ★開店/閉店トグル
   refresh({ silent: false });
-})();
+}
 
-
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", boot);
+} else {
+  boot();
+}
