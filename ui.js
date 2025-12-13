@@ -22,9 +22,16 @@
     return false;
   }
 
-  document.addEventListener("pointerdown", (ev)=>{
-    const t = ev.target;
-    if (!isTarget(t)) return;
+  document.addEventListener("click", (e) => {
+  const a = e.target.closest("a,button");
+  if (!a) return;
+
+  // ★ここに入れる（関数の中！）
+  if (window.IS_CUSTOMER_PAGE) return;
+
+  // ... 既存のナビ処理 ...
+});
+
 
     const el = t.closest("button") || t;
     // disabledは除外
@@ -33,5 +40,6 @@
     addRipple(el, ev.clientX, ev.clientY);
   }, { passive:true });
 })();
+
 
 
