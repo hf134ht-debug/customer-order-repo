@@ -246,7 +246,6 @@ function renderProductList() {
       </div>
 
       <div class="detailPanel">
-        <div class="muted">読み込み中…</div>
       </div>
     `;
 
@@ -729,3 +728,4 @@ qs("#btnLoadLast").addEventListener("click", async () => {
   const last = localStorage.getItem(LS_LAST_ORDER_ID) || "";
   qs("#btnLoadLast").style.display = last ? "" : "none";
 })();
+
