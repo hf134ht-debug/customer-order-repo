@@ -331,8 +331,7 @@ async function refresh({ silent = false } = {}) {
   try {
     if (!silent) setMsg("", "");
 
-    // ✅ 初回 or 手動更新だけ「読み込み中…」を出す（毎回出すとラグ/チラつきになる）
-    if (!didFirstPaint || !silent) showLoadingUI();
+   if (!silent) showLoadingUI();
 
     const json = await apiGet({
       mode: "getPendingOrders",
@@ -770,5 +769,6 @@ if (document.readyState === "loading") {
 } else {
   boot();
 }
+
 
 
