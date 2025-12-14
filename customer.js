@@ -494,21 +494,40 @@ async function ensureProductDetailLoaded(productId, panelEl) {
 }
 
 function toYoutubeEmbed(url) {
-  const u = String(url||"").trim();
+  const u = String(url || "").trim();
   if (!u) return "";
+
   try {
     const x = new URL(u);
-    if (x.hostname.includes("youtu.be")) {
-      const id = x.pathname.replace("/","").trim();
+    const host = x.hostname.replace(/^www\./, "");
+
+    // youtu.be/VIDEO_ID
+    if (host === "youtu.be") {
+      const id = x.pathname.replace("/", "").trim();
       return id ? `https://www.youtube.com/embed/${id}` : "";
     }
-    if (x.hostname.includes("youtube.com")) {
-      const id = x.searchParams.get("v");
-      return id ? `https://www.youtube.com/embed/${id}` : "";
+
+    // youtube.com/*
+    if (host.endsWith("youtube.com")) {
+      // watch?v=VIDEO_ID
+      const v = x.searchParams.get("v");
+      if (v) return `https://www.youtube.com/embed/${v}`;
+
+      // shorts/VIDEO_ID ← ★これが今回のポイント
+      const m1 = x.pathname.match(/\/shorts\/([a-zA-Z0-9_-]+)/);
+      if (m1) return `https://www.youtube.com/embed/${m1[1]}`;
+
+      // live/VIDEO_ID
+      const m2 = x.pathname.match(/\/live\/([a-zA-Z0-9_-]+)/);
+      if (m2) return `https://www.youtube.com/embed/${m2[1]}`;
     }
+
     return "";
-  } catch { return ""; }
+  } catch {
+    return "";
+  }
 }
+
 
 function renderDetailPanel(panelEl, d) {
   const desc = String(d.description || "").trim();
@@ -928,6 +947,7 @@ qs("#btnLoadLast").addEventListener("click", async () => {
   const last = localStorage.getItem(LS_LAST_ORDER_ID) || "";
   qs("#btnLoadLast").style.display = last ? "" : "none";
 })();
+
 
 
 
