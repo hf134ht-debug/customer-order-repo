@@ -328,7 +328,7 @@ async function refresh({ silent = false } = {}) {
   try {
     if (!silent) setMsg("", "");
 
-   if (!silent) showLoadingUI();
+   if (!silent && !didFirstPaint) showLoadingUI();
 
     const json = await apiGet({
       mode: "getPendingOrders",
@@ -340,18 +340,29 @@ async function refresh({ silent = false } = {}) {
 
     if (!json.ok) throw new Error(json.error || "取得失敗");
 
-    // ✅ 差分なしならDOMを触らない（体感速度が上がる）
-    if (json.changed === false && didFirstPaint) return;
+let skipRender = false;
 
-    ordersMain = Array.isArray(json.orders_main) ? json.orders_main
-      : (Array.isArray(json.orders) ? json.orders : []);
-    ordersOther = Array.isArray(json.orders_other) ? json.orders_other : [];
+// 差分なし
+if (json.changed === false && didFirstPaint) {
+  skipRender = true;
+}
 
-    if (typeof json.max_updated_at === "string") lastMaxUpdatedAt = json.max_updated_at;
-    if (Array.isArray(json.filter_options)) rebuildFilterOptions(json.filter_options);
+if (!skipRender) {
+  ordersMain = Array.isArray(json.orders_main) ? json.orders_main
+    : (Array.isArray(json.orders) ? json.orders : []);
+  ordersOther = Array.isArray(json.orders_other) ? json.orders_other : [];
 
-    renderAll();
-    didFirstPaint = true;
+  if (typeof json.max_updated_at === "string") {
+    lastMaxUpdatedAt = json.max_updated_at;
+  }
+  if (Array.isArray(json.filter_options)) {
+    rebuildFilterOptions(json.filter_options);
+  }
+
+  renderAll();
+  didFirstPaint = true;
+}
+
     setMsg("", "");
   } catch (err) {
     const list = qs("#orderList");
@@ -771,6 +782,7 @@ if (document.readyState === "loading") {
 } else {
   boot();
 }
+
 
 
 
