@@ -1474,3 +1474,34 @@ header{
   .qty .qtyInput{ order: 2; }
   .qty .btnMinus{ order: 3; }
 }
+
+/* === handoff: card enter/exit (軽量) === */
+.card {
+  will-change: transform, opacity;
+}
+
+.card.enter {
+  animation: cardEnter 220ms cubic-bezier(.2, 1.4, .3, 1) both;
+}
+@keyframes cardEnter {
+  from { opacity: 0; transform: translateY(10px) scale(.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.card.exit {
+  animation: cardExit 180ms ease both;
+  pointer-events: none;
+}
+@keyframes cardExit {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(-6px) scale(.985); }
+}
+
+/* 処理中（押下直後の体感0用） */
+.card.busy {
+  opacity: .65;
+  pointer-events: none;
+}
+.card.busy .btn {
+  opacity: .75;
+}
