@@ -190,12 +190,9 @@ function renderAll() {
   const list = qs("#orderList");
   if (!list) return;
 
-  // ★今回の表示対象ID
-  const nextIds = new Set(ordersMain.map(o => o.order_id).filter(Boolean));
-
   list.innerHTML = "";
 
-     // ★今回の表示対象ID（新規判定用）
+  // ★今回の表示対象ID（新規判定用）
   const nextIds = new Set(ordersMain.map(o => o.order_id).filter(Boolean));
 
   const compact = isCompact();
@@ -217,7 +214,7 @@ function renderAll() {
     list.innerHTML = `<div class="msg">受付中の注文はありません。</div>`;
   }
 
-  // ★描画済みIDを更新（mainだけでOK。otherはクリックで開くだけなので）
+  // ★描画済みIDを更新
   renderedIds = nextIds;
 
   const totalCount = ordersMain.length + ordersOther.length;
@@ -632,21 +629,26 @@ async function completeOrder(order_id) {
 
 async function cancelOrder(order_id) {
   if (!confirm("この注文をキャンセルします。よろしいですか？")) return;
-     if (inFlight[order_id]) return;
+
+  if (inFlight[order_id]) return;
   inFlight[order_id] = true;
   markBusy_(order_id, true);
+
   try {
     const json = await apiPost({ mode: "cancelOrder", order_id, actor: "staff" });
     if (!json.ok) throw new Error(json.error || "失敗");
-     removeOrderWithExit_(order_id);
+
+    removeOrderWithExit_(order_id);
+
     if (editingOrder && editingOrder.order_id === order_id) {
       await unlockEditingOrder();
       closeEditor();
     }
+
     refresh({ silent: true });
   } catch (err) {
     setMsg("err", `キャンセルできませんでした。\n詳細: ${String(err.message || err)}`);
-  }  } finally {
+  } finally {
     markBusy_(order_id, false);
     delete inFlight[order_id];
   }
@@ -769,6 +771,7 @@ if (document.readyState === "loading") {
 } else {
   boot();
 }
+
 
 
 
