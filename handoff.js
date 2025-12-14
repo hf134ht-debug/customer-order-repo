@@ -604,25 +604,38 @@ function removeOrderLocally(order_id) {
 
 async function completeOrder(order_id) {
   if (!confirm("受け渡し完了にします。よろしいですか？")) return;
-   if (inFlight[order_id]) return;
+
+  if (inFlight[order_id]) return;
   inFlight[order_id] = true;
   markBusy_(order_id, true);
+
   try {
     const json = await apiPost({ mode: "staffMarkHanded", order_id, actor: "staff" });
     if (!json.ok) throw new Error(json.error || "失敗");
-     removeOrderWithExit_(order_id);
+
+    // ここは exit アニメにするなら差し替え
+    removeOrderWithExit_(order_id);
+
     if (editingOrder && editingOrder.order_id === order_id) {
       await unlockEditingOrder();
       closeEditor();
     }
+
     refresh({ silent: true });
   } catch (err) {
     setMsg("err", `完了できませんでした。\n詳細: ${String(err.message || err)}`);
+  } finally {
+    markBusy_(order_id, false);
+    delete inFlight[order_id];
   }
 }
 
+
 async function cancelOrder(order_id) {
   if (!confirm("この注文をキャンセルします。よろしいですか？")) return;
+     if (inFlight[order_id]) return;
+  inFlight[order_id] = true;
+  markBusy_(order_id, true);
   try {
     const json = await apiPost({ mode: "cancelOrder", order_id, actor: "staff" });
     if (!json.ok) throw new Error(json.error || "失敗");
@@ -634,6 +647,9 @@ async function cancelOrder(order_id) {
     refresh({ silent: true });
   } catch (err) {
     setMsg("err", `キャンセルできませんでした。\n詳細: ${String(err.message || err)}`);
+  }  } finally {
+    markBusy_(order_id, false);
+    delete inFlight[order_id];
   }
 }
 
@@ -754,4 +770,5 @@ if (document.readyState === "loading") {
 } else {
   boot();
 }
+
 
