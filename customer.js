@@ -560,6 +560,54 @@ function renderDetailPanel(panelEl, d) {
     });
   }
 }
+function openModal({ title = "確認", bodyHtml = "", actions = [] } = {}) {
+  const ov = qs("#overlay");
+  const modal = qs("#modal");
+  const t = qs("#modalTitle");
+  const b = qs("#modalBody");
+  const a = qs("#modalActions");
+
+  if (!ov || !modal || !t || !b || !a) {
+    // モーダルDOMが無い場合は fallback
+    alert(String(title || "") + "\n\n" + String(bodyHtml || "").replace(/<[^>]*>/g, ""));
+    return;
+  }
+
+  t.textContent = title;
+  b.innerHTML = bodyHtml;
+  a.innerHTML = "";
+
+  (actions || []).forEach(act => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = act.className || "btn";
+    btn.textContent = act.label || "OK";
+    btn.addEventListener("click", () => {
+      try { act.onClick && act.onClick(); } catch (e) { console.error(e); }
+    });
+    a.appendChild(btn);
+  });
+
+  ov.classList.add("show");
+  ov.setAttribute("aria-hidden", "false");
+}
+
+function closeModal() {
+  const ov = qs("#overlay");
+  if (!ov) return;
+  ov.classList.remove("show");
+  ov.setAttribute("aria-hidden", "true");
+
+  const a = qs("#modalActions");
+  const b = qs("#modalBody");
+  if (a) a.innerHTML = "";
+  if (b) b.innerHTML = "";
+}
+
+// overlayクリックで閉じる（既に他でやってたら不要）
+document.addEventListener("click", (e) => {
+  if (e.target && e.target.id === "overlay") closeModal();
+});
 
 // ---------- Checkout ----------
 async function checkoutFlow() {
@@ -947,12 +995,3 @@ qs("#btnLoadLast").addEventListener("click", async () => {
   const last = localStorage.getItem(LS_LAST_ORDER_ID) || "";
   qs("#btnLoadLast").style.display = last ? "" : "none";
 })();
-
-
-
-
-
-
-
-
-
