@@ -100,6 +100,11 @@ let refreshLock = false;
 
 /* 初回ロード判定（毎回“読み込み中”を出してラグっぽくしない） */
 let didFirstPaint = false;
+// 追加：注文IDごとの処理中ロック（連打・競合防止）
+const inFlight = Object.create(null);
+
+// 追加：前回描画済みの注文ID（新規だけぷにゅん表示するため）
+let renderedIds = new Set();
 
 /* ===== controls ===== */
 const elView = qs("#viewMode");
@@ -185,16 +190,35 @@ function renderAll() {
   const list = qs("#orderList");
   if (!list) return;
 
+  // ★今回の表示対象ID
+  const nextIds = new Set(ordersMain.map(o => o.order_id).filter(Boolean));
+
   list.innerHTML = "";
+
+     // ★今回の表示対象ID（新規判定用）
+  const nextIds = new Set(ordersMain.map(o => o.order_id).filter(Boolean));
 
   const compact = isCompact();
   const isRankMode = (String(elSort?.value) === "rank");
 
-  ordersMain.forEach((o, idx) => list.appendChild(renderCard(o, compact, isRankMode, idx)));
+  ordersMain.forEach((o, idx) => {
+    const card = renderCard(o, compact, isRankMode, idx);
+
+    // ★新規だけ enter
+    if (didFirstPaint && o.order_id && !renderedIds.has(o.order_id)) {
+      card.classList.add("enter");
+      card.addEventListener("animationend", () => card.classList.remove("enter"), { once:true });
+    }
+
+    list.appendChild(card);
+  });
 
   if (!ordersMain.length) {
     list.innerHTML = `<div class="msg">受付中の注文はありません。</div>`;
   }
+
+  // ★描画済みIDを更新（mainだけでOK。otherはクリックで開くだけなので）
+  renderedIds = nextIds;
 
   const totalCount = ordersMain.length + ordersOther.length;
   const pill = qs("#countPill");
@@ -501,6 +525,43 @@ async function openEditor(order) {
   }
 }
 
+/* ===== card DOM helpers / UX ===== */
+function getCardEl_(order_id){
+  // renderCard で el.dataset.orderId = ... をしているので data-order-id で取れる
+  return qs(`.card[data-order-id="${CSS.escape(String(order_id||""))}"]`);
+}
+
+function removeOrderWithExit_(order_id) {
+  // state も先に消す（自動更新の残りと一致させる）
+  ordersMain = ordersMain.filter(o => o.order_id !== order_id);
+  ordersOther = ordersOther.filter(o => o.order_id !== order_id);
+  renderedIds.delete(order_id);
+
+  const el = getCardEl_(order_id);
+  if (!el) { 
+    // DOMになければ最低限再描画
+    renderAll();
+    return;
+  }
+
+  el.classList.add("exit");
+  el.addEventListener("animationend", () => {
+    el.remove();
+
+    // 件数表示だけ更新（軽く）
+    const totalCount = ordersMain.length + ordersOther.length;
+    const pill = qs("#countPill");
+    if (pill) pill.textContent = `${totalCount}件`;
+  }, { once:true });
+}
+
+function markBusy_(order_id, busy) {
+  const el = getCardEl_(order_id);
+  if (!el) return;
+  if (busy) el.classList.add("busy");
+  else el.classList.remove("busy");
+}
+
 /* ===== save / complete / cancel ===== */
 async function saveDraft() {
   if (!editingOrder) return;
@@ -543,10 +604,13 @@ function removeOrderLocally(order_id) {
 
 async function completeOrder(order_id) {
   if (!confirm("受け渡し完了にします。よろしいですか？")) return;
+   if (inFlight[order_id]) return;
+  inFlight[order_id] = true;
+  markBusy_(order_id, true);
   try {
     const json = await apiPost({ mode: "staffMarkHanded", order_id, actor: "staff" });
     if (!json.ok) throw new Error(json.error || "失敗");
-    removeOrderLocally(order_id);
+     removeOrderWithExit_(order_id);
     if (editingOrder && editingOrder.order_id === order_id) {
       await unlockEditingOrder();
       closeEditor();
@@ -562,7 +626,7 @@ async function cancelOrder(order_id) {
   try {
     const json = await apiPost({ mode: "cancelOrder", order_id, actor: "staff" });
     if (!json.ok) throw new Error(json.error || "失敗");
-    removeOrderLocally(order_id);
+     removeOrderWithExit_(order_id);
     if (editingOrder && editingOrder.order_id === order_id) {
       await unlockEditingOrder();
       closeEditor();
@@ -690,3 +754,4 @@ if (document.readyState === "loading") {
 } else {
   boot();
 }
+
