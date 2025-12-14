@@ -16,35 +16,51 @@ const SUBMIT_TOKEN_TS_KEY = "pos_submit_token_ts";
 const SUBMIT_TOKEN_TTL_MS = 2 * 60 * 1000; // 2分だけ有効
 
 async function apiGet(params) {
-  const u = new URL(GAS_WEB_APP_URL);
-  Object.entries(params || {}).forEach(([k, v]) => u.searchParams.set(k, String(v)));
-  u.searchParams.set("_ts", String(Date.now())); // キャッシュ回避
-  const res = await fetch(u.toString(), { method: "GET" });
-  const text = await res.text();
+  const url = new URL(GAS_WEB_APP_URL);
+  Object.entries(params || {}).forEach(([k, v]) => url.searchParams.set(k, v));
 
-  // JSON以外（HTML等）が返った時点で原因がわかるようにする
-  let json;
-  try { json = JSON.parse(text); }
-  catch { throw new Error(`JSONではありません: HTTP ${res.status}\n${text.slice(0, 200)}`); }
+  let res;
+  try {
+    res = await fetch(url.toString(), { method: "GET", cache: "no-store" });
+  } catch (e) {
+    throw new Error(`GET fetch failed: ${e && e.message ? e.message : e}`);
+  }
 
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return json;
+  const text = await res.text().catch(() => "");
+  if (!res.ok) {
+    throw new Error(`GET HTTP ${res.status} ${res.statusText}\n${text.slice(0, 500)}`);
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`GET invalid JSON\n${text.slice(0, 500)}`);
+  }
 }
 
-async function apiPost(body) {
-  const res = await fetch(GAS_WEB_APP_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body || {}),
-  });
-  const text = await res.text();
+async function apiPost(payload) {
+  let res;
+  try {
+    res = await fetch(GAS_WEB_APP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload || {}),
+      cache: "no-store",
+    });
+  } catch (e) {
+    throw new Error(`POST fetch failed: ${e && e.message ? e.message : e}`);
+  }
 
-  let json;
-  try { json = JSON.parse(text); }
-  catch { throw new Error(`JSONではありません: HTTP ${res.status}\n${text.slice(0, 200)}`); }
+  const text = await res.text().catch(() => "");
+  if (!res.ok) {
+    throw new Error(`POST HTTP ${res.status} ${res.statusText}\n${text.slice(0, 500)}`);
+  }
 
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return json;
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`POST invalid JSON\n${text.slice(0, 500)}`);
+  }
 }
 
 function loadSubmitToken() {
@@ -995,3 +1011,4 @@ qs("#btnLoadLast").addEventListener("click", async () => {
   const last = localStorage.getItem(LS_LAST_ORDER_ID) || "";
   qs("#btnLoadLast").style.display = last ? "" : "none";
 })();
+
