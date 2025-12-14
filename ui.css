@@ -1505,3 +1505,29 @@ header{
 .card.busy .btn {
   opacity: .75;
 }
+
+/* ===== ripple がレイアウトを壊さないための必須セット ===== */
+button, .btn, .tabbtn, .pressable {
+  position: relative;   /* ripple を absolute で浮かせる土台 */
+  overflow: hidden;     /* ripple が外へ出てレイアウト崩壊しない */
+}
+
+/* ripple 自体が高さ/幅に影響しないようにする */
+.ripple{
+  position: absolute;
+  left: 0; top: 0;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  pointer-events: none; /* クリック判定を邪魔しない */
+}
+
+/* ①②タブを安定させる（スマホでも崩れない） */
+.tabs{
+  display: flex;
+  gap: 8px;
+}
+.tabbtn{
+  flex: 1;
+  white-space: nowrap;
+  min-height: 44px;
+}
