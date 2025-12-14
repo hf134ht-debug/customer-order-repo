@@ -1464,3 +1464,13 @@ header{
   display: block;
 }
 
+@media (max-width: 520px){
+  .qty{
+    display:flex;
+    flex-direction:column; /* 既に縦なら不要だが、明示 */
+    align-items:stretch;
+  }
+  .qty .btnPlus{ order: 1; }
+  .qty .qtyInput{ order: 2; }
+  .qty .btnMinus{ order: 3; }
+}
